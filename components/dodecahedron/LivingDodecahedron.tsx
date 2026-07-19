@@ -54,6 +54,13 @@ const COLORS = {
   IDLE: "#53605b",
 } as const;
 
+const COMPASS_DIRECTIONS = [
+  { label: "N", coordinates: [0, -1.92, 0] as Point3 },
+  { label: "E", coordinates: [1.92, 0, 0] as Point3 },
+  { label: "S", coordinates: [0, 1.92, 0] as Point3 },
+  { label: "W", coordinates: [-1.92, 0, 0] as Point3 },
+] as const;
+
 function rotatePoint([x, y, z]: Point3, angleY: number, angleX: number): Point3 {
   const cosY = Math.cos(angleY);
   const sinY = Math.sin(angleY);
@@ -241,6 +248,16 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           z,
         };
       });
+      const compassPoints = COMPASS_DIRECTIONS.map((direction) => {
+        const [x, y, z] = rotatePoint(direction.coordinates, angleY, angleX);
+        const perspective = 1 / (4.8 - z);
+        return {
+          ...direction,
+          x: centerX + x * scale * perspective,
+          y: centerY + y * scale * perspective,
+          z,
+        };
+      });
       const projectedFaces = DODECAHEDRON_FACES.map(({ house, vertexIndices }): ProjectedFace => {
         const points = vertexIndices.map((index) => projectedVertices[index]);
         const x = points.reduce((sum, point) => sum + point.x, 0) / points.length;
@@ -265,6 +282,19 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       radial.addColorStop(1, "rgba(3, 8, 8, 0)");
       context.fillStyle = radial;
       context.fillRect(0, 0, width, height);
+
+      compassPoints.forEach((point) => {
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = point.z > 0
+          ? "rgba(206, 233, 217, 0.24)"
+          : "rgba(135, 154, 144, 0.11)";
+        context.lineWidth = 0.75;
+        context.setLineDash([2, 7]);
+        context.stroke();
+      });
+      context.setLineDash([]);
 
       [...projectedFaces]
         .sort((faceA, faceB) => faceA.z - faceB.z)
@@ -417,6 +447,23 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           context.fillText(`${face.house.current} · ${face.valve}`, point.x, point.y + 12);
         });
 
+      [...compassPoints]
+        .sort((pointA, pointB) => pointA.z - pointB.z)
+        .forEach((point) => {
+          context.beginPath();
+          context.arc(point.x, point.y, 12, 0, Math.PI * 2);
+          context.fillStyle = point.z > 0 ? "rgba(9, 16, 12, 0.96)" : "rgba(7, 11, 9, 0.76)";
+          context.fill();
+          context.strokeStyle = point.z > 0 ? "rgba(217, 245, 226, 0.82)" : "rgba(127, 148, 137, 0.44)";
+          context.lineWidth = 1;
+          context.stroke();
+          context.fillStyle = point.z > 0 ? "#f3fff6" : "#819087";
+          context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillText(point.label, point.x, point.y + 0.5);
+        });
+
       const anchorPulse = reduceMotion ? 0 : Math.sin(time * 0.0025) * 2;
       context.beginPath();
       context.arc(centerX, centerY, 29 + anchorPulse, 0, Math.PI * 2);
@@ -430,34 +477,6 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       context.setLineDash([2, 4]);
       context.stroke();
       context.setLineDash([]);
-
-      context.fillStyle = "rgba(4, 10, 8, 0.9)";
-      context.fillRect(centerX - 25, centerY - 43, 50, 14);
-      context.fillStyle = profile ? "#b8ff5a" : "#ffd166";
-      context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText("YOU", centerX, centerY - 36);
-
-      const observerPulse = 10 + anchorPulse;
-      context.beginPath();
-      context.arc(centerX, centerY, observerPulse, 0, Math.PI * 2);
-      context.fillStyle = "#ecffdb";
-      context.shadowColor = "#b8ff5a";
-      context.shadowBlur = 18;
-      context.fill();
-      context.shadowBlur = 0;
-      context.fillStyle = "#08110e";
-      context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.fillText("Ø", centerX, centerY);
-
-      const natalStatus = profile ? `${profile.birthDate} · ${profile.birthTime}` : "PROFILE PENDING";
-      context.font = "750 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      const natalStatusWidth = context.measureText(natalStatus).width;
-      context.fillStyle = "rgba(4, 10, 8, 0.9)";
-      context.fillRect(centerX - natalStatusWidth / 2 - 5, centerY + 29, natalStatusWidth + 10, 14);
-      context.fillStyle = profile ? "#dfffb8" : "#d6bd83";
-      context.fillText(natalStatus, centerX, centerY + 36);
 
       frame = requestAnimationFrame(render);
     };
@@ -550,6 +569,32 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
             inspectAt(event.clientX, event.clientY);
           }}
         />
+        <div
+          className={`human-anchor${selection.kind === "observer" ? " is-selected" : ""}`}
+          data-profile={profile ? "placed" : "pending"}
+          aria-hidden="true"
+        >
+          <span className="human-anchor-label">YOU / HUMAN CENTER</span>
+          <div className="human-orbit">
+            <svg className="human-figure" viewBox="0 0 120 150" aria-hidden="true">
+              <g className="human-echo">
+                <path d="M51 43 C41 44 32 50 24 57 L7 72 C3 76 5 80 10 77 L30 64 C39 59 47 56 53 54 Z" />
+                <path d="M69 43 C79 44 88 50 96 57 L113 72 C117 76 115 80 110 77 L90 64 C81 59 73 56 67 54 Z" />
+                <path d="M53 85 C47 91 40 102 31 122 L24 140 C22 145 28 147 31 142 L42 126 L57 99 Z" />
+                <path d="M67 85 C73 91 80 102 89 122 L96 140 C98 145 92 147 89 142 L78 126 L63 99 Z" />
+              </g>
+              <g className="human-body">
+                <ellipse cx="60" cy="19" rx="10" ry="13" />
+                <path d="M55 31 L53 37 C46 38 39 40 33 44 L16 53 L5 57 C1 59 2 64 7 64 L19 61 L40 52 L48 50 L48 68 C48 75 45 82 46 89 L51 97 L48 126 L46 143 C46 148 52 149 54 144 L58 126 L60 103 L62 126 L66 144 C68 149 74 148 74 143 L72 126 L69 97 L74 89 C75 82 72 75 72 68 L72 50 L80 52 L101 61 L113 64 C118 64 119 59 115 57 L104 53 L87 44 C81 40 74 38 67 37 L65 31 Z" />
+                <path className="human-detail" d="M53 39 Q60 45 67 39 M49 58 Q60 64 71 58 M48 81 Q60 87 72 81 M60 33 L60 98 M53 70 Q60 74 67 70" />
+                <circle className="human-detail" cx="60" cy="75" r="1.8" />
+                <path className="human-detail" d="M55 16 Q60 19 65 16 M56 25 Q60 27 64 25" />
+              </g>
+            </svg>
+          </div>
+          <strong>{selection.kind === "observer" ? "Ø SELECTED" : "Ø CENTER"}</strong>
+          <small>{profile ? `${profile.birthDate} · ${profile.birthTime}` : "ORIGIN AWAITS"}</small>
+        </div>
         <div className="living-overlay living-overlay-top">
           <span className={`connection-light is-${connection}`} />
           <span>{connection === "live" ? "D1 MEMORY LIVE" : connection === "connecting" ? "CONNECTING" : "LOCAL OBSERVER"}</span>

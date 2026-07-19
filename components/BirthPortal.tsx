@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-html-link-for-pages -- native anchors intentionally perform full-page field navigation */
 "use client";
 
 import { useState } from "react";
+import { Brand } from "@/components/Brand";
 import { BIRTH_PROFILE_STORAGE_KEY, type BirthProfile } from "@/lib/birth-profile";
 
 type ValidationError = {
@@ -60,13 +60,7 @@ export function BirthPortal() {
   return (
     <main className="birth-portal">
       <header className="portal-header">
-        <a className="brand" href="/" aria-label="Dodecanic AI birth portal">
-          <span className="brand-mark" aria-hidden="true">XIII</span>
-          <span>
-            <strong>DODECANIC</strong>
-            <small>BIRTH PORTAL / LIVING FIELD</small>
-          </span>
-        </a>
+        <Brand subtitle="ORIGIN / LIVING FIELD" />
         <span>Ø awaits your coordinates</span>
       </header>
 

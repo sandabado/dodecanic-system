@@ -1,4 +1,4 @@
-import { getObserverMemorySummary, listCycles } from "@/db/cycles";
+import { getObserverMemorySummary, listCycles } from "@/lib/observer-store";
 import {
   createObserverSnapshot,
   summarizeObserverHistory,

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import "./design-system.css";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -10,20 +11,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: {
-      default: "Dodecanic AI — Observer Console",
-      template: "%s / Dodecanic AI",
+      default: "Dodecanic — The Living Field",
+      template: "%s / Dodecanic",
     },
-    description: "A testable whole-body observer tracing prompts through twelve faces, thirty edges, five pillars, and Position 9.",
+    description: "A living twelve-House field built around the person, their natal origin, the current sky, and the Dodecanic observer.",
+    icons: { icon: "/favicon.svg" },
     openGraph: {
-      title: "Dodecanic AI — Whole-Body Observer",
-      description: "One prompt. Twelve faces. Thirty edges. A fully inspectable coherence model.",
+      title: "Dodecanic — The Living Field",
+      description: "Your origin at the center. Twelve Houses in motion around you.",
       images: [{ url: imageUrl, width: 1536, height: 1024, alt: "Dodecanic AI living dodecahedral field" }],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Dodecanic AI — Whole-Body Observer",
-      description: "One prompt. Twelve faces. Thirty edges. Position 9 observes the whole.",
+      title: "Dodecanic — The Living Field",
+      description: "Your origin at the center. Twelve Houses in motion around you.",
       images: [imageUrl],
     },
   };

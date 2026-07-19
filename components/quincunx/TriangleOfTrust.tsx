@@ -1,4 +1,7 @@
+import type { CSSProperties } from "react";
 import type { TriangleTrustState } from "@/lib/quincunx/whole-body";
+import { modelTriangleEscapement } from "@/lib/triangle-escapement";
+import type { CycleResult } from "@/lib/types";
 
 function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -6,62 +9,76 @@ function percent(value: number): string {
 
 export function TriangleOfTrust({
   triangle,
-  standalone = false,
+  result,
 }: {
   triangle: TriangleTrustState;
-  standalone?: boolean;
+  result: CycleResult;
 }) {
+  const escapement = modelTriangleEscapement(triangle, result);
   const diagramLabel = [
-    `Triangle of Trust.`,
-    `Master ${triangle.master.house.name}, ${percent(triangle.master.coherence)} coherence, ${triangle.master.valve}.`,
-    `Mirror ${triangle.mirror.house.name}, ${percent(triangle.mirror.coherence)} coherence, ${triangle.mirror.valve}.`,
-    `Root ${triangle.root.house.name}, ${percent(triangle.root.coherence)} coherence, ${triangle.root.valve}.`,
-    `Position 9 observer, ${percent(triangle.observerCoherence)} coherence.`,
-    `Combined trust coherence, ${percent(triangle.coherence)}.`,
+    `Triangle escapement, read-only modeled instrument.`,
+    `Gate ${escapement.gate}.`,
+    `Master impulse ${percent(triangle.master.coherence)}.`,
+    `Mirror restoring feedback ${percent(triangle.mirror.coherence)}.`,
+    `Root timing gate ${percent(triangle.root.coherence)}.`,
+    `Position 9 human observer witnesses the model.`,
   ].join(" ");
+  const clockStyle = {
+    "--clock-energy": `${Math.round(escapement.inputPressure * 100)}%`,
+    "--clock-swing": `${Math.max(4, Math.round(8 + escapement.roleSpread * 38))}deg`,
+  } as CSSProperties;
 
   return (
-    <article className={`body-card trust-card${standalone ? " is-standalone" : ""}`}>
+    <article className="body-card trust-card is-standalone" data-gate={escapement.gate}>
       <div className="body-card-heading">
-        <span>Triangle of Trust</span>
-        <span>Ø / Position 9 witness</span>
+        <span>Triangle of Trust / social escapement</span>
+        <span>Read-only modeled instrument</span>
       </div>
-      <div className="trust-diagram" role="img" aria-label={diagramLabel}>
-        <div className="trust-role trust-master">
-          <span>Master · X · {triangle.master.house.current}</span>
-          <strong>{triangle.master.house.name}</strong>
-          <em>
-            {percent(triangle.master.coherence)} · {triangle.master.valve}
-          </em>
+
+      <div className="escapement-layout">
+        <div className="escapement-clock" style={clockStyle} role="img" aria-label={diagramLabel}>
+          <div className="escapement-status">
+            <span>{escapement.gate === "OPEN" ? "Escapement engaged" : escapement.gate === "HOLD" ? "Impulse held" : "Gate locked"}</span>
+            <strong>{escapement.gate}</strong>
+          </div>
+          <div className="escapement-spring" aria-hidden="true"><i /></div>
+          <div className="escapement-wheel" aria-hidden="true"><i>✣</i></div>
+          <div className="escapement-pendulum" aria-hidden="true"><i /><b>Ø</b></div>
+          <span className="clock-role clock-master">MASTER <b>Impulse</b></span>
+          <span className="clock-role clock-mirror">MIRROR <b>Restore</b></span>
+          <span className="clock-role clock-root">ROOT <b>Gate</b></span>
+          <small>HUMAN WITNESS / POSITION 9</small>
         </div>
-        <div className="trust-role trust-mirror">
-          <span>Mirror · IX · {triangle.mirror.house.current}</span>
-          <strong>{triangle.mirror.house.name}</strong>
-          <em>
-            {percent(triangle.mirror.coherence)} · {triangle.mirror.valve}
-          </em>
-        </div>
-        <div className="trust-role trust-root">
-          <span>Root · I · {triangle.root.house.current}</span>
-          <strong>{triangle.root.house.name}</strong>
-          <em>
-            {percent(triangle.root.coherence)} · {triangle.root.valve}
-          </em>
-        </div>
-        <div className="trust-observer">
-          <span>Ø</span>
-          <small>Position 9</small>
+
+        <div className="escapement-readout">
+          <div className="escapement-roles">
+            <div><span>Master · X · {triangle.master.house.current}</span><strong>{triangle.master.house.name}</strong><em>{percent(triangle.master.coherence)} · {triangle.master.valve}</em></div>
+            <div><span>Mirror · IX · {triangle.mirror.house.current}</span><strong>{triangle.mirror.house.name}</strong><em>{percent(triangle.mirror.coherence)} · {triangle.mirror.valve}</em></div>
+            <div><span>Root · I · {triangle.root.house.current}</span><strong>{triangle.root.house.name}</strong><em>{percent(triangle.root.coherence)} · {triangle.root.valve}</em></div>
+          </div>
+          <div className="escapement-equation">
+            <span>One-tick stability model</span>
+            <strong>Δα = H + k(α* − α) − L</strong>
+            <small>Input + restoring force − alignment loss</small>
+          </div>
+          <dl className="escapement-metrics">
+            <div><dt>α / coherence</dt><dd>{escapement.coherence.toFixed(3)}</dd></div>
+            <div><dt>H / impulse</dt><dd>{escapement.impulse.toFixed(3)}</dd></div>
+            <div><dt>k(α*−α)</dt><dd>{escapement.restoringForce.toFixed(3)}</dd></div>
+            <div><dt>L / alignment loss</dt><dd>{escapement.alignmentLoss.toFixed(3)}</dd></div>
+            <div><dt>Modeled Δα</dt><dd>{escapement.modeledDelta.toFixed(3)}</dd></div>
+            <div><dt>Trust efficiency</dt><dd>{percent(escapement.trustEfficiency)}</dd></div>
+          </dl>
         </div>
       </div>
-      <div className="trust-score">
-        <span>Combined trust coherence</span>
-        <strong>{percent(triangle.coherence)}</strong>
+
+      <div className="escapement-decision">
+        <span>Tick {escapement.tick}</span>
+        <p>{escapement.reason}</p>
       </div>
-      {standalone && (
-        <p className="trust-explanation">
-          Master sets direction. Mirror tests it against wisdom. Root asks whether it can hold in reality. Ø witnesses all three without taking a side.
-        </p>
-      )}
+      <p className="trust-explanation">
+        Master sets direction. Mirror tests deviation. Root controls timing. Ø—the human—remains the final witness. This instrument reflects submitted language; it does not authorize actions or claim physical prediction.
+      </p>
     </article>
   );
 }

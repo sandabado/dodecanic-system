@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import Link from "next/link";
+import { Brand } from "@/components/Brand";
 import { HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
 import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
 
@@ -51,13 +51,7 @@ export function BirthLoading() {
   return (
     <main className="birth-loading" aria-labelledby="birth-loading-title">
       <header className="loading-header">
-        <Link className="brand" href="/" aria-label="Return to the Dodecanic birth portal">
-          <span className="brand-mark" aria-hidden="true">XIII</span>
-          <span>
-            <strong>DODECANIC</strong>
-            <small>ORIGIN SEQUENCE</small>
-          </span>
-        </Link>
+        <Brand subtitle="ORIGIN SEQUENCE" />
         <span>Private session / Ø</span>
       </header>
 
