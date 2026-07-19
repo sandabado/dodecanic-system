@@ -36,13 +36,14 @@ test("ships durable state and all eight observer currents", async () => {
 });
 
 test("models one dodecahedral body with twelve faces and thirty unique edges", async () => {
-  const [bodySource, houseSource, monitorSource] = await Promise.all([
+  const [topologySource, bodySource, houseSource, monitorSource] = await Promise.all([
+    readFile(new URL("lib/dodecahedron/topology.ts", templateRoot), "utf8"),
     readFile(new URL("lib/quincunx/whole-body.ts", templateRoot), "utf8"),
     readFile(new URL("types/houses.ts", templateRoot), "utf8"),
     readFile(new URL("components/quincunx/WholeBodyMonitor.tsx", templateRoot), "utf8"),
   ]);
 
-  const edgeBlock = bodySource.match(/const EDGE_PAIRS[^=]*= \[([\s\S]*?)\n\];/);
+  const edgeBlock = topologySource.match(/DODECAHEDRON_EDGE_PAIRS[^=]*= \[([\s\S]*?)\n\];/);
   assert.ok(edgeBlock, "edge topology is declared once");
   const pairs = [...edgeBlock[1].matchAll(/\[(\d+),\s*(\d+)\]/g)].map((match) =>
     match.slice(1).map(Number),
@@ -64,6 +65,29 @@ test("models one dodecahedral body with twelve faces and thirty unique edges", a
     assert.equal(connections, 5, `face ${house} touches exactly five edges`);
   }
 
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const coordinateBlock = topologySource.match(/FACE_COORDINATES[^=]*= \{([\s\S]*?)\n\};/);
+  assert.ok(coordinateBlock, "face centers are declared once");
+  const coordinates = new Map(
+    [...coordinateBlock[1].matchAll(/(\d+): \[([^\]]+)\]/g)].map((match) => [
+      Number(match[1]),
+      match[2].split(",").map((token) => {
+        const value = token.trim();
+        if (value === "PHI") return phi;
+        if (value === "-PHI") return -phi;
+        return Number(value);
+      }),
+    ]),
+  );
+  assert.equal(coordinates.size, 12, "each face has one unique 3D center");
+  assert.equal(new Set([...coordinates.values()].map((point) => point.join(","))).size, 12);
+  for (const [houseA, houseB] of pairs) {
+    const pointA = coordinates.get(houseA);
+    const pointB = coordinates.get(houseB);
+    const distance = Math.hypot(...pointA.map((value, index) => value - pointB[index]));
+    assert.ok(Math.abs(distance - 2) < 1e-9, `edge ${houseA}-${houseB} is geometrically adjacent`);
+  }
+
   const houseNumbers = [...houseSource.matchAll(/^\s*(\d+): \{ number: \d+/gm)].map((match) => Number(match[1]));
   assert.deepEqual(houseNumbers, Array.from({ length: 12 }, (_, index) => index + 1));
   assert.match(bodySource, /resolveCurrentPair\(houseA\.current, houseB\.current\)/);
@@ -75,14 +99,30 @@ test("models one dodecahedral body with twelve faces and thirty unique edges", a
 });
 
 test("updates the whole-body model from prompt input in real time", async () => {
-  const [dashboardSource, observerSource, pageSource] = await Promise.all([
+  const [dashboardSource, observerSource, pageSource, livingSource, telemetryRoute, telemetryHook, diagnosticsRoute, diagnosticsSource] = await Promise.all([
     readFile(new URL("components/quincunx/QuincunxDashboard.tsx", templateRoot), "utf8"),
     readFile(new URL("components/ObserverConsole.tsx", templateRoot), "utf8"),
     readFile(new URL("app/quincunx/page.tsx", templateRoot), "utf8"),
+    readFile(new URL("components/dodecahedron/LivingDodecahedron.tsx", templateRoot), "utf8"),
+    readFile(new URL("app/api/observer/telemetry/route.ts", templateRoot), "utf8"),
+    readFile(new URL("hooks/useObserverTelemetry.ts", templateRoot), "utf8"),
+    readFile(new URL("app/api/observer/diagnostics/route.ts", templateRoot), "utf8"),
+    readFile(new URL("lib/observer-diagnostics.ts", templateRoot), "utf8"),
   ]);
 
   assert.match(dashboardSource, /runDodecanicCycle\(prompt\.trim\(\)/);
-  assert.match(dashboardSource, /onChange=\{\(event\) => setPrompt\(event\.target\.value\)\}/);
+  assert.match(dashboardSource, /setPrompt\(event\.target\.value\)/);
+  assert.match(dashboardSource, /setReplayIndex\(null\)/);
   assert.match(observerSource, /WholeBodyMonitor result=\{displayResult\}/);
   assert.match(pageSource, /The Dodecahedron is the field of creation/);
+  assert.match(dashboardSource, /type="range"/);
+  assert.match(dashboardSource, /Memory \$\{replayIndex \+ 1\}/);
+  assert.match(livingSource, /inspectAt\(event\.clientX, event\.clientY\)/);
+  assert.match(livingSource, /selectedEdge\.reason/);
+  assert.match(livingSource, /selectedFace\.reason/);
+  assert.match(telemetryRoute, /listCycles\(limit\)/);
+  assert.match(telemetryHook, /setInterval\(\(\) => void refetch\(\), 12_000\)/);
+  assert.match(diagnosticsRoute, /runObserverDiagnostics\(\)/);
+  assert.match(diagnosticsSource, /body\.edges\.length === 30/);
+  assert.match(diagnosticsSource, /body\.quincunx\.position9\.bias === null/);
 });

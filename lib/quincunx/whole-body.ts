@@ -1,6 +1,7 @@
 import { resolveCurrentPair } from "@/lib/dodecanic-observer";
+import { DODECAHEDRON_EDGES } from "@/lib/dodecahedron/topology";
 import type { CycleResult, ValveAction } from "@/lib/types";
-import { HOUSE_DEFINITIONS, type HouseDefinition, type HouseNumber } from "@/types/houses";
+import { HOUSE_DEFINITIONS, type HouseDefinition } from "@/types/houses";
 import {
   calculateOverallCoherence,
   determineValveState,
@@ -18,6 +19,7 @@ export interface DodecahedralEdgeState {
   lookupCode: string;
   valve: ValveAction | "IDLE";
   flow: number;
+  reason: string;
 }
 
 export interface HouseFaceState {
@@ -25,6 +27,7 @@ export interface HouseFaceState {
   coherence: number;
   active: boolean;
   valve: ValveAction | "IDLE";
+  reason: string;
 }
 
 export interface PillarState {
@@ -52,21 +55,6 @@ export interface WholeBodyState {
   overallCoherence: number;
   valve: ValveAction;
 }
-
-const EDGE_PAIRS: ReadonlyArray<readonly [HouseNumber, HouseNumber]> = [
-  [1, 2], [1, 3], [1, 4], [1, 5], [1, 6],
-  [12, 7], [12, 8], [12, 9], [12, 10], [12, 11],
-  [2, 3], [3, 4], [4, 5], [5, 6], [6, 2],
-  [7, 8], [8, 9], [9, 10], [10, 11], [11, 7],
-  [2, 7], [2, 11], [3, 7], [3, 8], [4, 8],
-  [4, 9], [5, 9], [5, 10], [6, 10], [6, 11],
-];
-
-export const DODECAHEDRON_EDGES = EDGE_PAIRS.map(([houseA, houseB]) => ({
-  id: `${Math.min(houseA, houseB).toString().padStart(2, "0")}-${Math.max(houseA, houseB).toString().padStart(2, "0")}`,
-  houseA,
-  houseB,
-}));
 
 function clamp(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -128,7 +116,11 @@ export function calculateWholeBodyState(result: CycleResult): WholeBodyState {
     const active = activeCurrents.has(house.current);
     const secondary = house.quincunxSecondary ? scores[house.quincunxSecondary] : base;
     const coherence = clamp((base * 0.7 + secondary * 0.3) + (active ? 0.08 : -0.06));
-    return { house, coherence, active, valve: faceValve(coherence, active, result.finalValve) };
+    const valve = faceValve(coherence, active, result.finalValve);
+    const reason = active
+      ? `${house.current} is present; ${house.quincunxPrimary} coherence sets the primary response.`
+      : `${house.current} is absent; the face remains observable without carrying active flow.`;
+    return { house, coherence, active, valve, reason };
   });
   const faceByHouse = new Map(faces.map((face) => [face.house.number, face]));
 
@@ -140,7 +132,12 @@ export function calculateWholeBodyState(result: CycleResult): WholeBodyState {
     const resolution = resolveCurrentPair(houseA.current, houseB.current);
     const flow = activeA && activeB ? 1 : activeA || activeB ? 0.45 : 0;
     const valve = flow === 0 ? "IDLE" : activeA && activeB ? resolution.valveAction : "OPEN";
-    return { id: edge.id, houseA, houseB, lookupCode: resolution.lookupCode, valve, flow };
+    const reason = activeA && activeB
+      ? `${houseA.current} and ${houseB.current} meet at full flow; lookup ${resolution.lookupCode} resolves ${valve}.`
+      : activeA || activeB
+        ? `One endpoint carries the prompt, so this pathway opens at partial flow.`
+        : `Neither endpoint carries an active prompt current; the pathway stays observable and idle.`;
+    return { id: edge.id, houseA, houseB, lookupCode: resolution.lookupCode, valve, flow, reason };
   });
 
   const root = faceByHouse.get(1)!;
