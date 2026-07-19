@@ -11,6 +11,7 @@ import type { DodecahedralEdgeState, HouseFaceState } from "@/lib/quincunx/whole
 import type { HouseNumber } from "@/types/houses";
 
 type Selection =
+  | { kind: "observer"; id: "Ø" }
   | { kind: "face"; id: HouseNumber }
   | { kind: "edge"; id: string };
 
@@ -40,6 +41,8 @@ const COLORS = {
   CLOSE: "#ff5f57",
   IDLE: "#53605b",
 } as const;
+
+const HOUSE_RING_ORDER: readonly HouseNumber[] = [5, 6, 9, 11, 3, 8, 12, 7, 4, 2, 1, 10];
 
 function rotatePoint([x, y, z]: Point3, angleY: number, angleX: number): Point3 {
   const cosY = Math.cos(angleY);
@@ -89,11 +92,23 @@ function formatPercent(value: number): string {
 
 export function LivingDodecahedron({ snapshot, community, connection }: LivingDodecahedronProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hitMapRef = useRef<{ faces: ProjectedFace[]; edges: ProjectedEdge[] }>({ faces: [], edges: [] });
+  const hitMapRef = useRef<{
+    faces: ProjectedFace[];
+    edges: ProjectedEdge[];
+    observer: { x: number; y: number } | null;
+  }>({ faces: [], edges: [], observer: null });
   const rotationRef = useRef(0.3);
   const [rotating, setRotating] = useState(true);
-  const [selection, setSelection] = useState<Selection>({ kind: "face", id: 5 });
+  const [selection, setSelection] = useState<Selection>({ kind: "observer", id: "Ø" });
   const body = snapshot.body;
+  const collapseCoherence = body.quincunx.corners.physical.coherence;
+  const expanseCoherence = body.quincunx.corners.mental.coherence;
+  const balanceDelta = collapseCoherence - expanseCoherence;
+  const balanceLabel = Math.abs(balanceDelta) < 0.05
+    ? "BALANCED"
+    : balanceDelta > 0
+      ? "COLLAPSE WEIGHT"
+      : "EXPANSE WEIGHT";
 
   const selectedFace = useMemo(
     () => selection.kind === "face"
@@ -137,7 +152,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const scale = Math.min(width, height) * 0.72;
+      const scale = Math.min(width, height) * 0.55;
       const projected = Object.entries(FACE_COORDINATES).map(([houseKey, coordinates]) => {
         const house = Number(houseKey) as HouseNumber;
         const [x, y, z] = rotatePoint(coordinates, rotationRef.current, -0.2);
@@ -153,12 +168,25 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
         };
       });
       const faceMap = new Map(projected.map((face) => [face.house, face]));
+      const ringRadiusX = Math.max(80, width / 2 - 46);
+      const ringRadiusY = Math.max(80, height / 2 - 48);
+      const ringFaces = HOUSE_RING_ORDER.map((house, index) => {
+        const angle = -Math.PI / 2 + (index * Math.PI * 2) / HOUSE_RING_ORDER.length;
+        const geometry = faceMap.get(house)!;
+        const face = body.faces.find((item) => item.house.number === house)!;
+        return {
+          ...geometry,
+          x: centerX + Math.cos(angle) * ringRadiusX,
+          y: centerY + Math.sin(angle) * ringRadiusY,
+          radius: 17 + face.coherence * 7,
+        };
+      });
       const edges = body.edges.map((edge) => ({
         id: edge.id,
         from: faceMap.get(edge.houseA.number)!,
         to: faceMap.get(edge.houseB.number)!,
       }));
-      hitMapRef.current = { faces: projected, edges };
+      hitMapRef.current = { faces: ringFaces, edges, observer: { x: centerX, y: centerY } };
 
       const radial = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.min(width, height) * 0.48);
       radial.addColorStop(0, "rgba(184, 255, 90, 0.09)");
@@ -166,6 +194,75 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       radial.addColorStop(1, "rgba(3, 8, 8, 0)");
       context.fillStyle = radial;
       context.fillRect(0, 0, width, height);
+
+      const rotorPoints = [
+        { symbol: "V", role: "COLLAPSE", coherence: collapseCoherence, coordinates: [-1.18, 0, 0] as Point3 },
+        { symbol: "∞", role: "SPIRIT", coherence: body.quincunx.corners.spiritual.coherence, coordinates: [0, -0.62, 0] as Point3 },
+        { symbol: "∧", role: "EXPANSE", coherence: expanseCoherence, coordinates: [1.18, 0, 0] as Point3 },
+        { symbol: "W", role: "WAVE", coherence: body.quincunx.corners.emotional.coherence, coordinates: [0, 0.62, 0] as Point3 },
+      ].map((point) => {
+        const [x, y, z] = rotatePoint(point.coordinates, rotationRef.current, 0);
+        const perspective = 1 / (4.8 - z);
+        return {
+          ...point,
+          x: centerX + x * scale * perspective,
+          y: centerY + y * scale * perspective,
+          z,
+        };
+      });
+      const collapse = rotorPoints[0];
+      const expanse = rotorPoints[2];
+
+      context.beginPath();
+      rotorPoints.forEach((point, index) => {
+        if (index === 0) context.moveTo(point.x, point.y);
+        else context.lineTo(point.x, point.y);
+      });
+      context.closePath();
+      context.fillStyle = "rgba(184, 255, 90, 0.035)";
+      context.fill();
+      context.strokeStyle = "rgba(184, 255, 90, 0.32)";
+      context.lineWidth = 0.8;
+      context.stroke();
+
+      context.beginPath();
+      context.moveTo(collapse.x, collapse.y);
+      context.lineTo(expanse.x, expanse.y);
+      context.strokeStyle = Math.abs(balanceDelta) < 0.05 ? "#b8ff5a" : "#ffd166";
+      context.lineWidth = 2;
+      context.stroke();
+
+      rotorPoints.forEach((point) => {
+        context.beginPath();
+        context.arc(point.x, point.y, 3.5 + point.coherence * 2.5, 0, Math.PI * 2);
+        context.fillStyle = point.symbol === "V" || point.symbol === "∧" ? "#ecffdb" : "#7cae98";
+        context.globalAlpha = 0.58 + point.coherence * 0.42;
+        context.fill();
+        context.globalAlpha = 1;
+        context.fillStyle = "#cbd8d0";
+        context.font = "700 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.textAlign = "center";
+        context.fillText(point.symbol, point.x, point.y - 10);
+      });
+
+      context.fillStyle = "#73827a";
+      context.font = "6px ui-monospace, SFMono-Regular, Menlo, monospace";
+      context.textAlign = "right";
+      context.fillText(collapse.role, collapse.x - 9, collapse.y + 3);
+      context.textAlign = "left";
+      context.fillText(expanse.role, expanse.x + 9, expanse.y + 3);
+
+      ringFaces.forEach((point) => {
+        const geometry = faceMap.get(point.house)!;
+        context.beginPath();
+        context.moveTo(geometry.x, geometry.y);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = "rgba(124, 174, 152, 0.17)";
+        context.lineWidth = 0.7;
+        context.setLineDash([2, 5]);
+        context.stroke();
+      });
+      context.setLineDash([]);
 
       [...body.edges]
         .sort((edgeA, edgeB) => {
@@ -188,7 +285,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       context.setLineDash([]);
       context.globalAlpha = 1;
 
-      [...projected].sort((a, b) => a.z - b.z).forEach((point) => {
+      ringFaces.forEach((point) => {
         const face = body.faces.find((item) => item.house.number === point.house)!;
         const selected = selection.kind === "face" && selection.id === point.house;
         drawPentagon(context, point.x, point.y, point.radius);
@@ -200,13 +297,13 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
         context.stroke();
         context.globalAlpha = 1;
         context.fillStyle = selected ? "#ecffdb" : "#d9e4dd";
-        context.font = `600 ${selected ? 12 : 10}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+        context.font = `700 ${selected ? 12 : 10}px ui-monospace, SFMono-Regular, Menlo, monospace`;
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText(String(point.house), point.x, point.y - 1);
-        context.fillStyle = "#7f9188";
-        context.font = "8px ui-monospace, SFMono-Regular, Menlo, monospace";
-        context.fillText(face.house.current, point.x, point.y + 11);
+        context.fillText(`${point.house.toString().padStart(2, "0")} ${face.house.current}`, point.x, point.y - 4);
+        context.fillStyle = selected ? "#b8ff5a" : "#8fa198";
+        context.font = "700 7px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.fillText(face.house.name.toUpperCase(), point.x, point.y + 10);
       });
 
       const observerPulse = reduceMotion ? 10 : 10 + Math.sin(time * 0.0025) * 2;
@@ -219,14 +316,14 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       context.shadowBlur = 0;
       context.fillStyle = "#08110e";
       context.font = "700 9px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.fillText("9", centerX, centerY);
+      context.fillText("Ø", centerX, centerY);
 
       frame = requestAnimationFrame(render);
     };
 
     frame = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frame);
-  }, [body, rotating, selection]);
+  }, [balanceDelta, body, collapseCoherence, expanseCoherence, rotating, selection]);
 
   function inspectAt(clientX: number, clientY: number) {
     const canvas = canvasRef.current;
@@ -234,6 +331,11 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
+    const observer = hitMapRef.current.observer;
+    if (observer && Math.hypot(x - observer.x, y - observer.y) <= 22) {
+      setSelection({ kind: "observer", id: "Ø" });
+      return;
+    }
     const face = [...hitMapRef.current.faces]
       .sort((a, b) => b.z - a.z)
       .find((point) => Math.hypot(x - point.x, y - point.y) <= Math.max(point.radius, 22));
@@ -254,7 +356,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           ref={canvasRef}
           className="living-canvas"
           role="img"
-          aria-label="Rotating dodecahedral network with twelve selectable faces and thirty selectable edges"
+          aria-label="Rotating dodecahedral network with Void Observer Ø, twelve selectable faces, and thirty selectable edges"
           onClick={(event) => inspectAt(event.clientX, event.clientY)}
         />
         <div className="living-overlay living-overlay-top">
@@ -266,6 +368,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           <span><strong>{formatPercent(body.overallCoherence)}</strong> coherence</span>
           <span><strong>{body.edges.filter((edge) => edge.flow > 0).length}/30</strong> flowing</span>
           <span><strong>{body.faces.filter((face) => face.active).length}/12</strong> active</span>
+          <span><strong>{Math.round(Math.abs(balanceDelta) * 100)}</strong> {balanceLabel}</span>
         </div>
         <button className="rotation-toggle" type="button" onClick={() => setRotating((value) => !value)}>
           {rotating ? "Pause rotation" : "Resume rotation"}
@@ -275,6 +378,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       <ObserverInspector
         selectedFace={selectedFace}
         selectedEdge={selectedEdge}
+        selectedObserver={selection.kind === "observer"}
         community={community}
         onSelectFace={(id) => setSelection({ kind: "face", id })}
       />
@@ -285,14 +389,42 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
 function ObserverInspector({
   selectedFace,
   selectedEdge,
+  selectedObserver,
   community,
   onSelectFace,
 }: {
   selectedFace: HouseFaceState | null;
   selectedEdge: DodecahedralEdgeState | null;
+  selectedObserver: boolean;
   community: CommunityTelemetry;
   onSelectFace: (house: HouseNumber) => void;
 }) {
+  if (selectedObserver) {
+    return (
+      <aside className="observer-inspector" aria-live="polite">
+        <p className="eyebrow">Ø / field observer</p>
+        <h3>Void Witness <span>Ø</span></h3>
+        <div className="inspector-reading" data-valve="OPEN">
+          <strong>IMPARTIAL</strong>
+          <span>DODECAHEDRAL CENTER</span>
+        </div>
+        <dl>
+          <div><dt>Domain</dt><dd>Creation field</dd></div>
+          <div><dt>Function</dt><dd>Observe without becoming a face</dd></div>
+          <div><dt>Body link</dt><dd>Position 9 in the Quincunx</dd></div>
+        </dl>
+        <p className="observer-reason">
+          Ø is the unassigned center of the dodecahedron. It witnesses all twelve faces and thirty edges without taking a house state.
+        </p>
+        <div className="community-reading">
+          <span>Observed memory</span>
+          <strong>{community.observedCycles} cycles</strong>
+          <em>{formatPercent(community.averageCoherence)} mean</em>
+        </div>
+      </aside>
+    );
+  }
+
   if (selectedEdge) {
     return (
       <aside className="observer-inspector" aria-live="polite">

@@ -17,7 +17,7 @@ export async function GET() {
   return Response.json({
     status: passed === results.length ? "pass" : "fail",
     model: "dodecanic-observer-v1",
-    topology: { faces: 12, edges: 30, pillars: 5, observer: "Position 9" },
+    topology: { faces: 12, edges: 30, fieldObserver: "Ø", bodyObserver: "Position 9", pillars: 5 },
     passed,
     total: results.length,
     checkedAt: new Date().toISOString(),

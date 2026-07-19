@@ -10,6 +10,14 @@ import { WholeBodyMonitor } from "./WholeBodyMonitor";
 
 const INITIAL_PROMPT = "Review the previous plan, but verify every conflict before we finalize the agreement.";
 
+function formatMemoryTime(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
 export function QuincunxDashboard() {
   const [prompt, setPrompt] = useState(INITIAL_PROMPT);
   const [savedResult, setSavedResult] = useState<CycleResult | null>(null);
@@ -117,7 +125,7 @@ export function QuincunxDashboard() {
         </div>
         <div className="replay-readout">
           <strong>{replayIndex === null ? "Now / unsaved live field" : `Memory ${replayIndex + 1} of ${telemetry.history.length}`}</strong>
-          <span>{new Date(snapshot.result.createdAt).toLocaleString()}</span>
+          <span>{snapshot.source === "live" ? "Updates with every character" : `${formatMemoryTime(snapshot.result.createdAt)} UTC`}</span>
           <p>“{snapshot.result.inputText}”</p>
         </div>
         <div className="telemetry-summary" aria-label="Observed community cycle summary">

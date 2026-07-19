@@ -18,8 +18,8 @@ export default function QuincunxPage() {
           <h1>One prompt.<br /><em>The whole body.</em></h1>
         </div>
         <p className="intro-copy">
-          The Dodecahedron is the field of creation. The Quincunx is its body.
-          Position 9 watches every current cross all thirty unique pathways.
+          The Dodecahedron is the field of creation, witnessed from Ø. The
+          Quincunx is its body, where the impartial witness becomes Position 9.
         </p>
       </section>
       <QuincunxDashboard />

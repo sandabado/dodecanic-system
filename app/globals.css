@@ -1061,7 +1061,7 @@ kbd {
 
 .living-model {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 218px;
+  grid-template-columns: minmax(0, 1fr) 310px;
   min-height: 470px;
 }
 
@@ -1171,23 +1171,27 @@ kbd {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 18px;
+  padding: 25px;
 }
 
-.observer-inspector .eyebrow { margin: 0 0 11px; }
+.observer-inspector .eyebrow {
+  color: #91a49a;
+  font-size: 8px;
+  margin: 0 0 14px;
+}
 
 .observer-inspector h3 {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 500;
   line-height: 1;
-  margin: 0 0 16px;
+  margin: 0 0 20px;
 }
 
 .observer-inspector h3 span {
   color: var(--acid);
   float: right;
-  font-size: 20px;
+  font-size: 26px;
 }
 
 .inspector-reading {
@@ -1202,48 +1206,48 @@ kbd {
 .inspector-reading[data-valve="OPEN"] { border-top-color: var(--acid); }
 .inspector-reading[data-valve="MONITOR"] { border-top-color: var(--amber); }
 .inspector-reading[data-valve="CLOSE"] { border-top-color: var(--coral); }
-.inspector-reading strong { font-family: var(--mono); font-size: 20px; }
-.inspector-reading span { color: #74847b; font-family: var(--mono); font-size: 7px; }
+.inspector-reading strong { font-family: var(--mono); font-size: 27px; }
+.inspector-reading span { color: #9bad9f; font-family: var(--mono); font-size: 9px; }
 
 .observer-inspector dl {
   display: grid;
-  gap: 9px;
-  margin: 16px 0;
+  gap: 12px;
+  margin: 21px 0;
 }
 
 .observer-inspector dl div {
   display: grid;
   gap: 6px;
-  grid-template-columns: 58px 1fr;
+  grid-template-columns: 76px 1fr;
 }
 
 .observer-inspector dt,
 .observer-inspector dd {
   font-family: var(--mono);
-  font-size: 7px;
-  line-height: 1.4;
+  font-size: 10px;
+  line-height: 1.5;
   margin: 0;
 }
 
-.observer-inspector dt { color: #56645d; text-transform: uppercase; }
-.observer-inspector dd { color: #c2d0c7; }
+.observer-inspector dt { color: #819188; font-weight: 650; text-transform: uppercase; }
+.observer-inspector dd { color: #eff8f1; font-size: 11px; }
 
 .observer-reason {
-  color: #8f9c95;
-  font-size: 10px;
-  line-height: 1.55;
+  color: #d7e2da;
+  font-size: 13px;
+  line-height: 1.65;
   margin: 0;
 }
 
 .observer-inspector blockquote {
   border-left: 1px solid var(--acid);
-  color: #728178;
+  color: #b8c7bd;
   font-family: var(--serif);
-  font-size: 12px;
+  font-size: 16px;
   font-style: italic;
   line-height: 1.45;
   margin: 18px 0 0;
-  padding-left: 10px;
+  padding-left: 13px;
 }
 
 .community-reading {
