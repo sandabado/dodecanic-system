@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DodecahedronViewer } from "./DodecahedronViewer";
+import { SiteFooter } from "./SiteFooter";
+import { SiteHeader } from "./SiteHeader";
+import { WholeBodyMonitor } from "./quincunx/WholeBodyMonitor";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
 import { CURRENTS, type CycleResult, type ValveAction } from "@/lib/types";
 
@@ -76,30 +79,19 @@ export function ObserverConsole() {
     }
   }, [inputText, isRunning]);
 
+  const displayResult = useMemo(
+    () => inputText.trim() ? runDodecanicCycle(inputText.trim()) : result,
+    [inputText, result],
+  );
+
   const activeIndices = useMemo(
-    () => new Set(result?.activeCurrents ?? []),
-    [result],
+    () => new Set(displayResult?.activeCurrents ?? []),
+    [displayResult],
   );
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#top" aria-label="Dodecanic AI home">
-          <span className="brand-mark">12</span>
-          <span>
-            <strong>DODECANIC</strong>
-            <small>OBSERVER / 01</small>
-          </span>
-        </a>
-        <div className="system-status" aria-label="System status">
-          <span className="status-dot" />
-          SYSTEM ONLINE
-          <span className="status-separator">/</span>
-          8 CURRENTS
-          <span className="status-separator">/</span>
-          64 STATES
-        </div>
-      </header>
+      <SiteHeader activeView="observer" />
 
       <section className="intro" id="top">
         <div>
@@ -158,9 +150,9 @@ export function ObserverConsole() {
             <span>LIVE MAP</span>
           </div>
           <DodecahedronViewer
-            activeCurrents={result?.activeCurrents ?? []}
-            stateByte={result?.stateByte ?? 0}
-            valve={result?.finalValve ?? null}
+            activeCurrents={displayResult?.activeCurrents ?? []}
+            stateByte={displayResult?.stateByte ?? 0}
+            valve={displayResult?.finalValve ?? null}
           />
           <div className="current-legend">
             {CURRENTS.map((current) => (
@@ -175,27 +167,27 @@ export function ObserverConsole() {
         <article className="panel result-panel" aria-live="polite">
           <div className="panel-heading">
             <span>03 / VALVE</span>
-            <span>{result ? `${result.interactions.length} PAIRS` : "NO CYCLE"}</span>
+            <span>{displayResult ? `${displayResult.interactions.length} PAIRS` : "NO CYCLE"}</span>
           </div>
-          <div className="valve-display" data-valve={result?.finalValve ?? "IDLE"}>
+          <div className="valve-display" data-valve={displayResult?.finalValve ?? "IDLE"}>
             <span className="valve-orbit" aria-hidden="true" />
             <div>
               <span>Final valve</span>
-              <strong>{valveLabel(result?.finalValve ?? null)}</strong>
+              <strong>{valveLabel(displayResult?.finalValve ?? null)}</strong>
             </div>
           </div>
 
-          {result ? (
+          {displayResult ? (
             <>
               <div className="response-block">
                 <span>System response</span>
-                <p>{result.response}</p>
+                <p>{displayResult.response}</p>
               </div>
               <div className="interaction-list">
                 <div className="interaction-head">
                   <span>Pair</span><span>Lookup</span><span>Valve</span>
                 </div>
-                {result.interactions.length ? result.interactions.slice(0, 8).map((interaction, index) => (
+                {displayResult.interactions.length ? displayResult.interactions.slice(0, 8).map((interaction, index) => (
                   <div className="interaction-row" key={`${interaction.currentA}-${interaction.currentB}-${index}`}>
                     <span>{interaction.currentA} + {interaction.currentB}</span>
                     <span>{interaction.lookupCode}</span>
@@ -204,8 +196,8 @@ export function ObserverConsole() {
                 )) : (
                   <p className="empty-pairs">A single current produces no pairwise interaction.</p>
                 )}
-                {result.interactions.length > 8 && (
-                  <p className="more-pairs">+ {result.interactions.length - 8} additional interactions</p>
+                {displayResult.interactions.length > 8 && (
+                  <p className="more-pairs">+ {displayResult.interactions.length - 8} additional interactions</p>
                 )}
               </div>
             </>
@@ -218,6 +210,8 @@ export function ObserverConsole() {
           {notice && <p className="notice">{notice}</p>}
         </article>
       </section>
+
+      {displayResult && <WholeBodyMonitor result={displayResult} />}
 
       <section className="history-section">
         <div className="section-heading">
@@ -258,10 +252,7 @@ export function ObserverConsole() {
         </div>
       </section>
 
-      <footer>
-        <span>DODECANIC AI / OBSERVER SYSTEM</span>
-        <span>SENSE → READ → ACTUATE → RESPOND</span>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

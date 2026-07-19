@@ -21,6 +21,24 @@ function valveFor(code: string): ValveAction {
   return "OPEN";
 }
 
+export interface CurrentPairResolution {
+  lookupCode: string;
+  valveAction: ValveAction;
+}
+
+export function resolveCurrentPair(
+  currentA: string,
+  currentB: string,
+): CurrentPairResolution {
+  const indexA = CURRENTS.findIndex((current) => current.symbol === currentA);
+  const indexB = CURRENTS.findIndex((current) => current.symbol === currentB);
+  if (indexA < 0 || indexB < 0) {
+    return { lookupCode: "UNKNOWN", valveAction: "MONITOR" };
+  }
+  const lookupCode = LOOKUP_TABLE[indexA][indexB];
+  return { lookupCode, valveAction: valveFor(lookupCode) };
+}
+
 function buildResponse(valve: ValveAction, signal: Signal): string {
   if (valve === "CLOSE") {
     if (signal.isRecursive && signal.isConflicting) {
