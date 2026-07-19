@@ -1,0 +1,63 @@
+:root {
+  color-scheme: dark;
+
+  /* Core surfaces */
+  --color-canvas: #08080a;
+  --color-surface: #101014;
+  --color-surface-raised: #15151b;
+  --color-line: #2c2b33;
+  --color-line-soft: #1f1e25;
+
+  /* Content */
+  --color-text: #eeeade;
+  --color-text-muted: #aaa7b0;
+  --color-text-dim: #77747e;
+
+  /* Functional accents */
+  --color-primary: #7762ff;
+  --color-primary-bright: #9b8cff;
+  --color-live: #baf447;
+  --color-watch: #f1ac43;
+  --color-stop: #ff685f;
+  --color-supplied: #82d7ff;
+  --color-modeled: #b6a9ff;
+  --color-symbolic: #dfb3ff;
+  --color-session: #94b8aa;
+
+  /* Type */
+  --font-sans: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-serif: "Iowan Old Style", Baskerville, "Times New Roman", serif;
+
+  /* Rhythm */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-control: 2px;
+  --radius-panel: 0;
+  --content-max: 1440px;
+  --shelf-height: 66.667svh;
+
+  /* Legacy aliases retained while components move to semantic tokens. */
+  --ink: var(--color-canvas);
+  --panel: var(--color-surface);
+  --panel-raised: var(--color-surface-raised);
+  --line: var(--color-line);
+  --line-soft: var(--color-line-soft);
+  --paper: var(--color-text);
+  --muted: var(--color-text-muted);
+  --violet: var(--color-primary);
+  --violet-bright: var(--color-primary-bright);
+  --acid: var(--color-live);
+  --amber: var(--color-watch);
+  --coral: var(--color-stop);
+  --sans: var(--font-sans);
+  --mono: var(--font-mono);
+  --serif: var(--font-serif);
+}

@@ -1,4 +1,4 @@
-export const NATAL_CHART_SCHEMA_VERSION = 1 as const;
+export const NATAL_CHART_SCHEMA_VERSION = 2 as const;
 
 export const ZODIAC_SIGNS = [
   "aries",
@@ -28,15 +28,11 @@ export const NATAL_PLANET_IDS = [
   "pluto",
   "north_node",
   "south_node",
-  "chiron",
-  "black_moon_lilith",
 ] as const;
 
 export const CHART_ANGLE_IDS = [
   "ascendant",
   "midheaven",
-  "descendant",
-  "imum_coeli",
 ] as const;
 
 export const NATAL_ASPECT_KINDS = [
@@ -45,21 +41,34 @@ export const NATAL_ASPECT_KINDS = [
   "trine",
   "square",
   "sextile",
-  "quincunx",
-  "semisextile",
-  "semisquare",
-  "sesquiquadrate",
 ] as const;
 
 export const HOUSE_SYSTEMS = [
-  "placidus",
   "whole_sign",
-  "equal",
-  "koch",
-  "porphyry",
-  "regiomontanus",
-  "campanus",
 ] as const;
+
+export const DODECANIC_ASTROLOGY_STANDARD = {
+  zodiac: "tropical",
+  houseSystem: "whole_sign",
+  solarChartReferenceTime: "12:00:00",
+  signToHouseMappingStatus: "unresolved",
+  prevalenceMargin: 0.1,
+  transitAspectModifier: 1.5,
+  aspectOrbs: {
+    luminary: 8,
+    planet: 6,
+    angle: 5,
+    lunarNode: 3,
+  },
+  natalWeights: {
+    ascendant: 3,
+    sun: 2,
+    moon: 1.5,
+    planet: 1,
+    midheaven: 1,
+    northNode: 0.5,
+  },
+} as const;
 
 export type NatalChartSchemaVersion = typeof NATAL_CHART_SCHEMA_VERSION;
 export type ZodiacSign = (typeof ZODIAC_SIGNS)[number];
@@ -68,7 +77,8 @@ export type ChartAngleId = (typeof CHART_ANGLE_IDS)[number];
 export type ChartPointId = NatalPlanetId | ChartAngleId;
 export type NatalAspectKind = (typeof NATAL_ASPECT_KINDS)[number];
 export type HouseSystem = (typeof HOUSE_SYSTEMS)[number];
-export type ZodiacMode = "tropical" | "sidereal";
+export type ZodiacMode = "tropical";
+export type BirthTimeMode = "exact" | "solar_chart";
 export type HouseNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 export interface ResolvedBirthPlace {
@@ -87,7 +97,11 @@ export interface ResolvedBirthPlace {
  */
 export interface ResolvedBirthInput {
   localDate: string;
-  localTime: string;
+  /** User-supplied civil time. Null means the time was explicitly unknown. */
+  localTime: string | null;
+  /** Exact user time or the disclosed solar-chart reference time. */
+  calculationLocalTime: string;
+  birthTimeMode: BirthTimeMode;
   utcDateTime: string;
   utcOffsetMinutes: number;
   place: ResolvedBirthPlace;
@@ -106,7 +120,8 @@ export interface NatalPlanetPosition extends EclipticPosition {
   latitude: number;
   longitudeSpeed: number;
   retrograde: boolean;
-  house: HouseNumber;
+  /** Null in solar-chart mode because no ASC-derived houses are calculated. */
+  house: HouseNumber | null;
 }
 
 export interface HouseCusp extends EclipticPosition {
@@ -145,7 +160,7 @@ export interface NatalChartEngineMetadata {
  * Canonical chart payload stored in `natal_charts.chart_data`. Increment
  * `schemaVersion` before making a breaking change to this shape.
  */
-export interface NatalChartDataV1 {
+export interface NatalChartDataV2 {
   schemaVersion: NatalChartSchemaVersion;
   input: ResolvedBirthInput;
   engine: NatalChartEngineMetadata;
@@ -155,12 +170,12 @@ export interface NatalChartDataV1 {
   aspects: NatalAspect[];
 }
 
-export type NatalChartData = NatalChartDataV1;
+export type NatalChartData = NatalChartDataV2;
 
 export interface NatalChartOptions {
   houseSystem: HouseSystem;
   zodiac: ZodiacMode;
-  ayanamsha?: string;
+  ayanamsha?: never;
 }
 
 export interface NatalChartRequest {

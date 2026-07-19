@@ -93,7 +93,7 @@ function orderedFaceVertices(house: HouseNumber): readonly number[] {
   });
 }
 
-/** The twelve physical pentagons, keyed to their observer house. */
+/** The twelve physical pentagons, each occupied by one canonical House. */
 export const DODECAHEDRON_FACES: readonly DodecahedronFace[] = HOUSE_NUMBERS
   .map((house) => ({ house, vertexIndices: orderedFaceVertices(house) }));
 
@@ -120,6 +120,49 @@ export const DODECAHEDRON_EDGES = DODECAHEDRON_EDGE_PAIRS.map(([houseA, houseB])
     vertexIndices: [vertexIndices[0], vertexIndices[1]] as const,
   };
 });
+
+function graphDiameter(nodes: readonly number[], connections: readonly (readonly [number, number])[]): number {
+  const adjacency = new Map(nodes.map((node) => [node, [] as number[]]));
+  connections.forEach(([from, to]) => {
+    adjacency.get(from)?.push(to);
+    adjacency.get(to)?.push(from);
+  });
+
+  return nodes.reduce((maximum, origin) => {
+    const distances = new Map([[origin, 0]]);
+    const queue = [origin];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const distance = distances.get(current)!;
+      adjacency.get(current)?.forEach((neighbor) => {
+        if (distances.has(neighbor)) return;
+        distances.set(neighbor, distance + 1);
+        queue.push(neighbor);
+      });
+    }
+    return Math.max(maximum, ...distances.values());
+  }, 0);
+}
+
+/** V − E + F for the regular dodecahedron. */
+export const DODECAHEDRON_EULER_CHARACTERISTIC = DODECAHEDRON_VERTICES.length
+  - DODECAHEDRON_EDGES.length
+  + DODECAHEDRON_FACES.length;
+
+/** Maximum path between physical vertices in the dodecahedral graph. */
+export const DODECAHEDRON_VERTEX_GRAPH_DIAMETER = graphDiameter(
+  DODECAHEDRON_VERTICES.map((_, index) => index),
+  DODECAHEDRON_EDGES.map((edge) => edge.vertexIndices),
+);
+
+/** Maximum path between House-bearing faces in the icosahedral dual graph. */
+export const HOUSE_FACE_GRAPH_DIAMETER = graphDiameter(HOUSE_NUMBERS, DODECAHEDRON_EDGE_PAIRS);
+
+if (DODECAHEDRON_EULER_CHARACTERISTIC !== 2
+  || DODECAHEDRON_VERTEX_GRAPH_DIAMETER !== 5
+  || HOUSE_FACE_GRAPH_DIAMETER !== 3) {
+  throw new Error("Dodecahedral topology invariant failed");
+}
 
 export function getAdjacentHouses(house: HouseNumber): HouseNumber[] {
   return DODECAHEDRON_EDGE_PAIRS.flatMap(([houseA, houseB]) => {

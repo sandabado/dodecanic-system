@@ -3,31 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { LivingDodecahedron } from "@/components/dodecahedron/LivingDodecahedron";
 import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
+import { CurrentSkyPanel } from "@/components/CurrentSkyPanel";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useObserverTelemetry } from "@/hooks/useObserverTelemetry";
-import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
+import { BIRTH_PROFILE_STORAGE_KEY, formatBirthTime, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
-import { DIAGNOSTIC_CASES } from "@/lib/observer-diagnostics";
-import { calculateTemporalBalance } from "@/lib/observer-temporal";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import type { CycleResult } from "@/lib/types";
 import { NatalProfilePanel } from "./NatalProfilePanel";
-import { ObserverDiagnostics } from "./ObserverDiagnostics";
-import { TemporalObserver } from "./TemporalObserver";
 import { TriangleOfTrust } from "./TriangleOfTrust";
 import { WholeBodyMonitor } from "./WholeBodyMonitor";
 
-const INITIAL_PROMPT = "Review the previous plan, but verify every conflict before we finalize the agreement.";
+const INITIAL_PROMPT = "";
 
-type FieldShelf = "profile" | "memory" | "time" | "diagnostics" | "trust" | "body" | "spectrum";
+type FieldShelf = "profile" | "now" | "field" | "memory" | "spectrum";
 
 const SHELF_TITLES: Record<FieldShelf, string> = {
   profile: "Your natal profile",
-  memory: "Observer memory",
-  time: "Past · Present · Future",
-  diagnostics: "Synthetic diagnostics",
-  trust: "Triangle of Trust",
-  body: "Whole-body presence",
-  spectrum: "Twelve-House spectrum",
+  now: "The sky now",
+  field: "Whole-body field",
+  memory: "Session history",
+  spectrum: "Twelve Houses",
 };
 
 function formatMemoryTime(value: string): string {
@@ -54,10 +51,6 @@ export function QuincunxDashboard() {
   const snapshot = replayIndex === null
     ? telemetry.live
     : telemetry.history[replayIndex] ?? telemetry.live;
-  const temporal = useMemo(
-    () => calculateTemporalBalance(snapshot.result, telemetry.history.map((item) => item.result)),
-    [snapshot.result, telemetry.history],
-  );
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -96,10 +89,10 @@ export function QuincunxDashboard() {
       setReplayIndex(null);
       await telemetry.refetch();
       setNotice(data.cycle.persisted === false
-        ? "Cycle tested, but durable memory is unavailable."
+        ? "Cycle added to this server session; durable memory is not connected."
         : "Whole-body cycle committed to observer memory.");
     } catch {
-      setNotice("Live test is active; this cycle was not added to durable memory.");
+      setNotice("Live reflection is active; this cycle was not saved.");
     } finally {
       setIsSaving(false);
     }
@@ -118,7 +111,6 @@ export function QuincunxDashboard() {
   return (
     <main className="app-shell field-site">
       <SiteHeader
-        activeView="quincunx"
         utility={(
           <form
             className="nav-prompt"
@@ -139,6 +131,7 @@ export function QuincunxDashboard() {
                 onChange={(event) => updatePrompt(event.target.value)}
                 maxLength={4000}
                 autoComplete="off"
+                placeholder="Ask the field to reflect a question, pattern, or decision…"
               />
               <button type="submit" disabled={!prompt.trim() || isSaving}>
                 <span>{isSaving ? "Saving" : "Commit"}</span>
@@ -153,7 +146,7 @@ export function QuincunxDashboard() {
         <div className="field-identity" role="status" aria-live="polite" aria-atomic="true">
           <span>{birthProfile ? "You / natal anchor / current session" : "You / profile pending"}</span>
           <strong>{birthProfile
-            ? `${birthProfile.birthDate} · ${birthProfile.birthTime} · ${birthProfile.birthPlace}`
+            ? `${birthProfile.birthDate} · ${formatBirthTime(birthProfile)} · ${birthProfile.birthPlace}`
             : "The Dodecahedron is the field of creation. Add birth coordinates to place yourself inside it."}</strong>
         </div>
         <LivingDodecahedron
@@ -175,7 +168,29 @@ export function QuincunxDashboard() {
           >
             <span>00 / You</span>
             <strong>YOU</strong>
-            <small>{birthProfile ? birthProfile.birthPlace : "add birth profile"}</small>
+            <small><DataProvenanceBadge compact status={birthProfile ? DATA_PROVENANCE.originSupplied : DATA_PROVENANCE.originPending} /><span>{birthProfile ? birthProfile.birthPlace : "add birth profile"}</span></small>
+          </button>
+          <button
+            type="button"
+            data-active={activeShelf === "now"}
+            aria-expanded={activeShelf === "now"}
+            aria-controls="field-shelf-drawer"
+            onClick={() => setActiveShelf((current) => current === "now" ? null : "now")}
+          >
+            <span>01 / Now</span>
+            <strong>UTC</strong>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.currentSkyPending} /><span>live clock</span></small>
+          </button>
+          <button
+            type="button"
+            data-active={activeShelf === "field"}
+            aria-expanded={activeShelf === "field"}
+            aria-controls="field-shelf-drawer"
+            onClick={() => setActiveShelf((current) => current === "field" ? null : "field")}
+          >
+            <span>02 / Field</span>
+            <strong>{Math.round(snapshot.body.overallCoherence * 100)}%</strong>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.fieldModeled} /><span>{activeFaces}/12 · {flowingEdges}/30</span></small>
           </button>
           <button
             type="button"
@@ -184,53 +199,9 @@ export function QuincunxDashboard() {
             aria-controls="field-shelf-drawer"
             onClick={() => setActiveShelf((current) => current === "memory" ? null : "memory")}
           >
-            <span>01 / Memory</span>
+            <span>03 / Session</span>
             <strong>{telemetry.community.observedCycles}</strong>
-            <small>{replayIndex === null ? "live field" : `memory ${replayIndex + 1}`}</small>
-          </button>
-          <button
-            type="button"
-            data-active={activeShelf === "time"}
-            aria-expanded={activeShelf === "time"}
-            aria-controls="field-shelf-drawer"
-            onClick={() => setActiveShelf((current) => current === "time" ? null : "time")}
-          >
-            <span>02 / Time</span>
-            <strong>{Math.round(temporal.alignment * 100)}%</strong>
-            <small>{temporal.direction}</small>
-          </button>
-          <button
-            type="button"
-            data-active={activeShelf === "diagnostics"}
-            aria-expanded={activeShelf === "diagnostics"}
-            aria-controls="field-shelf-drawer"
-            onClick={() => setActiveShelf((current) => current === "diagnostics" ? null : "diagnostics")}
-          >
-            <span>03 / Diagnostics</span>
-            <strong>{DIAGNOSTIC_CASES.length}</strong>
-            <small>synthetic probes</small>
-          </button>
-          <button
-            type="button"
-            data-active={activeShelf === "trust"}
-            aria-expanded={activeShelf === "trust"}
-            aria-controls="field-shelf-drawer"
-            onClick={() => setActiveShelf((current) => current === "trust" ? null : "trust")}
-          >
-            <span>04 / Trust</span>
-            <strong>{Math.round(snapshot.body.triangle.coherence * 100)}%</strong>
-            <small>I Root · IX Mirror · X Master</small>
-          </button>
-          <button
-            type="button"
-            data-active={activeShelf === "body"}
-            aria-expanded={activeShelf === "body"}
-            aria-controls="field-shelf-drawer"
-            onClick={() => setActiveShelf((current) => current === "body" ? null : "body")}
-          >
-            <span>05 / Presence</span>
-            <strong>{Math.round(snapshot.body.overallCoherence * 100)}%</strong>
-            <small>{activeFaces}/12 faces · {flowingEdges}/30 edges</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.sessionOnly} /><span>{replayIndex === null ? "current field" : `memory ${replayIndex + 1}`}</span></small>
           </button>
           <button
             className="spectrum-shelf-trigger"
@@ -240,9 +211,9 @@ export function QuincunxDashboard() {
             aria-controls="field-shelf-drawer"
             onClick={() => setActiveShelf((current) => current === "spectrum" ? null : "spectrum")}
           >
-            <span>06 / Spectrum</span>
+            <span>04 / Houses</span>
             <strong>XII</strong>
-            <small>color · light · sound</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.housesSymbolic} /><span>color · light · sound</span></small>
           </button>
         </nav>
 
@@ -264,12 +235,22 @@ export function QuincunxDashboard() {
                   onEditProfile={() => window.location.assign("/")}
                 />
               )}
+              {activeShelf === "now" && <CurrentSkyPanel profile={birthProfile} />}
+              {activeShelf === "field" && (
+                <section className="field-model-shelf" aria-label="Whole-body field model">
+                  <WholeBodyMonitor result={snapshot.result} />
+                  <p className="model-boundary">
+                    Observer readings describe patterns in submitted language. They are reflective system telemetry—not medical, psychological, biometric, or astrological diagnoses.
+                  </p>
+                </section>
+              )}
               {activeShelf === "memory" && (
-                <section className="telemetry-replay" aria-label="Observer memory replay">
+                <section className="telemetry-replay" aria-label="Session replay">
+                  <TriangleOfTrust triangle={snapshot.body.triangle} result={snapshot.result} />
                   <div className="telemetry-replay-heading">
                     <div>
-                      <p className="eyebrow">Historical playback</p>
-                      <h2>Replay the body</h2>
+                      <p className="eyebrow">Current server session</p>
+                      <h2>Replay a reflection</h2>
                     </div>
                     <button
                       type="button"
@@ -297,36 +278,13 @@ export function QuincunxDashboard() {
                     <span>{snapshot.source === "live" ? "Updates with every character" : `${formatMemoryTime(snapshot.result.createdAt)} UTC`}</span>
                     <p>“{snapshot.result.inputText}”</p>
                   </div>
-                  <div className="telemetry-summary" aria-label="Observed community cycle summary">
+                  <div className="telemetry-summary" aria-label="Current session cycle summary">
                     <span><strong>{telemetry.community.observedCycles}</strong> observed</span>
                     <span><strong>{telemetry.community.openCycles}</strong> open</span>
                     <span><strong>{telemetry.community.monitorCycles}</strong> monitor</span>
                     <span><strong>{telemetry.community.closedCycles}</strong> close</span>
                   </div>
                 </section>
-              )}
-              {activeShelf === "time" && <TemporalObserver result={snapshot.result} history={telemetry.history} />}
-              {activeShelf === "diagnostics" && (
-                <ObserverDiagnostics
-                  onLoadPrompt={(diagnosticPrompt) => {
-                    updatePrompt(diagnosticPrompt);
-                    setNotice("Synthetic signal loaded. The live body reflects it now.");
-                    setActiveShelf(null);
-                  }}
-                />
-              )}
-              {activeShelf === "trust" && (
-                <section className="trust-shelf" aria-label="Triangle of Trust model">
-                  <TriangleOfTrust triangle={snapshot.body.triangle} standalone />
-                </section>
-              )}
-              {activeShelf === "body" && (
-                <>
-                  <WholeBodyMonitor result={snapshot.result} compact />
-                  <p className="model-boundary">
-                    Observer readings describe patterns in submitted language. They are reflective system telemetry—not medical, psychological, or biometric diagnoses.
-                  </p>
-                </>
               )}
               {activeShelf === "spectrum" && <HouseSpectrum />}
             </div>

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import Link from "next/link";
+import { Brand } from "@/components/Brand";
 import { HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
-import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
+import { BIRTH_PROFILE_STORAGE_KEY, formatBirthTime, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
 
 const STAGES = [
   "Receiving your origin coordinates",
   "Opening the twelve-House spectrum",
-  "Placing YOU at the observer center",
+  "Placing YOU at the Ethereal center",
 ] as const;
 
 type OrbitStyle = CSSProperties & {
@@ -51,13 +51,7 @@ export function BirthLoading() {
   return (
     <main className="birth-loading" aria-labelledby="birth-loading-title">
       <header className="loading-header">
-        <Link className="brand" href="/" aria-label="Return to the Dodecanic birth portal">
-          <span className="brand-mark" aria-hidden="true">XIII</span>
-          <span>
-            <strong>DODECANIC</strong>
-            <small>ORIGIN SEQUENCE</small>
-          </span>
-        </Link>
+        <Brand subtitle="ORIGIN SEQUENCE" />
         <span>Private session / Ø</span>
       </header>
 
@@ -94,7 +88,7 @@ export function BirthLoading() {
 
           <dl className="loading-coordinates">
             <div><dt>Date</dt><dd>{profile?.birthDate || "Receiving…"}</dd></div>
-            <div><dt>Time</dt><dd>{profile?.birthTime || "Receiving…"}</dd></div>
+            <div><dt>Time</dt><dd>{profile ? formatBirthTime(profile) : "Receiving…"}</dd></div>
             <div><dt>Place</dt><dd>{profile?.birthPlace || "Receiving…"}</dd></div>
           </dl>
 

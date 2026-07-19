@@ -1,19 +1,12 @@
-import { listCycles, saveCycle } from "@/db/cycles";
+import { listCycles, saveCycle } from "@/lib/observer-store";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const headers = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
   "Cache-Control": "no-store",
 };
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers });
-}
 
 export async function GET() {
   try {

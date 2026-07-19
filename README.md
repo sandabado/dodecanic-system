@@ -1,16 +1,33 @@
-# Dodecanic AI
+# Dodecanic
 
-A production-ready testbed for the eight-current Dodecanic Observer. The app
-classifies natural-language signals, resolves every active current pair through
-the 64-state lookup table, determines an `OPEN`, `MONITOR`, or `CLOSE` valve,
-and records completed cycles in durable D1 storage.
+Dodecanic places a person at the center of a Sphere containing a twelve-House
+dodecahedral lattice and modeled toroidal flow. The product is organized around
+three information layers:
 
-## Observer cycle
+1. **Origin** — supplied birth date, time status, and place.
+2. **Now** — the exact current moment and, once licensed, the current sky.
+3. **Field** — the Dodecanic House, color, current, and observer model.
 
-1. **Sense** — classify the incoming signal across eight currents.
-2. **Read** — evaluate every active current pair through the lookup table.
-3. **Actuate** — resolve the valve with `CLOSE > MONITOR > OPEN` priority.
-4. **Respond** — return a concise operational recommendation.
+The Swiss Ephemeris calculation boundary and Supabase schema are prepared but
+not yet connected. The interface never invents natal placements while those
+services are unavailable. Observer cycles currently persist only for the
+lifetime of a warm server process.
+
+Product meaning is ratified in
+[`docs/DODECANIC_CONSTITUTION.md`](docs/DODECANIC_CONSTITUTION.md). Current
+data-claim boundaries are defined in
+[`docs/SEMANTIC_CONTRACT.md`](docs/SEMANTIC_CONTRACT.md).
+
+## Product map
+
+- `/` — birth-origin portal
+- `/loading` — short origin handoff
+- `/quincunx` — the living field
+- `/api/cycle` — prompt reflection cycle
+- `/api/observer/telemetry` — current session telemetry
+
+Inside the field, five shelves contain the supporting information: **YOU**,
+**NOW**, **FIELD**, **SESSION**, and **HOUSES**.
 
 ## Local development
 
@@ -19,17 +36,15 @@ npm install
 npm run dev
 ```
 
-The local app runs at `http://localhost:3000`. Use `Command + Enter` from the
-signal field to run a cycle.
+Open `http://127.0.0.1:3000`.
 
 ## Validation
 
 ```bash
-npm run build
 npm run lint
-node --test tests/rendered-html.test.mjs
-./node_modules/.bin/tsc --noEmit
+npx tsc --noEmit
+npm test
 ```
 
-The first API request initializes the local D1 schema. The checked-in Drizzle
-migration in `drizzle/` is used for hosted environments.
+See [Product architecture](docs/ARCHITECTURE.md) and
+[Design system](docs/DESIGN_SYSTEM.md) for the project boundaries.

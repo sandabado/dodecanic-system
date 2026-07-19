@@ -3,6 +3,13 @@ import type { PillarState } from "@/lib/quincunx/whole-body";
 
 const CORNER_ORDER: Corner[] = ["physical", "mental", "emotional", "spiritual"];
 
+const DOMAIN_ELEMENTS: Record<Corner, { symbol: string; element: string; direction: string }> = {
+  physical: { symbol: "🜃", element: "Earth", direction: "South" },
+  mental: { symbol: "🜁", element: "Air", direction: "North" },
+  emotional: { symbol: "🜄", element: "Water", direction: "West" },
+  spiritual: { symbol: "🜂", element: "Fire", direction: "East" },
+};
+
 function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -56,6 +63,7 @@ export function QuincunxPresence({ quincunx, pillars }: QuincunxPresenceProps) {
         {CORNER_ORDER.map((corner) => {
           const pillar = pillarById.get(corner);
           const state = quincunx.corners[corner];
+          const element = DOMAIN_ELEMENTS[corner];
           if (!pillar) return null;
 
           return (
@@ -64,12 +72,12 @@ export function QuincunxPresence({ quincunx, pillars }: QuincunxPresenceProps) {
               data-direction={pillar.direction}
               data-status={pillar.status}
               key={corner}
-              aria-label={`${titleCase(corner)} pillar. Current ${state.current}. ${percent(state.coherence)} coherence. ${directionLabel(pillar.direction)}. Status ${pillar.status}.`}
+              aria-label={`${titleCase(corner)} pillar. ${element.element}, ${element.direction}. Current ${state.current}. ${percent(state.coherence)} coherence. ${directionLabel(pillar.direction)}. Status ${pillar.status}.`}
             >
-              <span className="quincunx-domain-current" aria-hidden="true">{state.current}</span>
+              <span className="quincunx-domain-current" aria-hidden="true">{element.symbol}</span>
               <span className="quincunx-domain-name">
                 <strong>{titleCase(corner)}</strong>
-                <small>{directionLabel(pillar.direction)} · {titleCase(pillar.status)}</small>
+                <small>{element.element} · {element.direction} · {state.current}</small>
               </span>
               <em>{percent(state.coherence)}</em>
               <span className="quincunx-domain-track" aria-hidden="true">
@@ -83,11 +91,11 @@ export function QuincunxPresence({ quincunx, pillars }: QuincunxPresenceProps) {
         <div
           className="quincunx-position-nine"
           data-valve={quincunx.position9.valve}
-          aria-label={`Position 9 observer. Impartial. Valve ${quincunx.position9.valve}.`}
+          aria-label={`Human at the Ethereal center. Position 9 system observer remains impartial. Valve ${quincunx.position9.valve}.`}
         >
           <span>Ø</span>
-          <strong>Position 9</strong>
-          <small>Impartial · {titleCase(quincunx.position9.valve)}</small>
+          <strong>YOU / Ethereal</strong>
+          <small>9 witnesses · {titleCase(quincunx.position9.valve)}</small>
         </div>
       </div>
 

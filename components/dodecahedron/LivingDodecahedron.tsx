@@ -9,14 +9,14 @@ import {
   getAdjacentHouses,
   type Point3,
 } from "@/lib/dodecahedron/topology";
-import type { BirthProfile } from "@/lib/birth-profile";
-import { hexToRgba, HOUSE_ROMAN, HOUSE_SPECTRUM, mixHouseColors } from "@/lib/house-spectrum";
+import { formatBirthTime, type BirthProfile } from "@/lib/birth-profile";
+import { hexToRgba, HOUSE_ROMAN, HOUSE_SPECTRUM, HOUSE_SPECTRUM_ORDER, mixHouseColors } from "@/lib/house-spectrum";
 import type { ObserverSnapshot, CommunityTelemetry } from "@/lib/observer-telemetry";
 import type { DodecahedralEdgeState, HouseFaceState } from "@/lib/quincunx/whole-body";
 import type { HouseNumber } from "@/types/houses";
 
 type Selection =
-  | { kind: "observer"; id: "Ø" }
+  | { kind: "center"; id: "Ø" }
   | { kind: "face"; id: HouseNumber }
   | { kind: "edge"; id: string };
 
@@ -53,6 +53,20 @@ const COLORS = {
   CLOSE: "#ff5f57",
   IDLE: "#53605b",
 } as const;
+
+const COMPASS_DIRECTIONS = [
+  { label: "N", coordinates: [0, -1.92, 0] as Point3 },
+  { label: "E", coordinates: [1.92, 0, 0] as Point3 },
+  { label: "S", coordinates: [0, 1.92, 0] as Point3 },
+  { label: "W", coordinates: [-1.92, 0, 0] as Point3 },
+] as const;
+
+const QUINCUNX_DOMAINS = [
+  { id: "physical", label: "PHYSICAL", element: "EARTH · SOUTH", symbol: "🜃", current: "V", color: "#84a66e", coordinates: [0, 0.98, 0] as Point3 },
+  { id: "mental", label: "MENTAL", element: "AIR · NORTH", symbol: "🜁", current: "∧", color: "#d4af37", coordinates: [0, -0.98, 0] as Point3 },
+  { id: "emotional", label: "EMOTIONAL", element: "WATER · WEST", symbol: "🜄", current: "W", color: "#2ba8a0", coordinates: [-0.98, 0, 0] as Point3 },
+  { id: "spiritual", label: "SPIRITUAL", element: "FIRE · EAST", symbol: "🜂", current: "∞", color: "#d16b45", coordinates: [0.98, 0, 0] as Point3 },
+] as const;
 
 function rotatePoint([x, y, z]: Point3, angleY: number, angleX: number): Point3 {
   const cosY = Math.cos(angleY);
@@ -112,8 +126,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   const hitMapRef = useRef<{
     faces: ProjectedFace[];
     edges: ProjectedEdge[];
-    observer: { x: number; y: number } | null;
-  }>({ faces: [], edges: [], observer: null });
+    center: { x: number; y: number } | null;
+  }>({ faces: [], edges: [], center: null });
   const rotationRef = useRef({ x: -0.24, y: 0.3 });
   const orbitRef = useRef({
     pointerInside: false,
@@ -129,7 +143,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   const [rotating, setRotating] = useState(true);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [selection, setSelection] = useState<Selection>({ kind: "observer", id: "Ø" });
+  const [selection, setSelection] = useState<Selection>({ kind: "center", id: "Ø" });
   const body = snapshot.body;
   const aethericCoherence = body.pillars.find((pillar) => pillar.id === "aetheric")?.coherence ?? body.overallCoherence;
   const collapseCoherence = body.quincunx.corners.physical.coherence;
@@ -224,22 +238,62 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       const elapsed = Math.min(time - lastTime, 40);
       lastTime = time;
       if (rotating && !reduceMotion && orbitRef.current.pointerId === null) {
-        rotationRef.current.y += elapsed * 0.00012;
+        rotationRef.current.y += elapsed * (0.000065 + body.overallCoherence * 0.000085);
       }
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const scale = Math.min(width, height) * 0.98;
+      const fieldSize = Math.min(width, height);
+      const latticeScale = fieldSize * 0.84;
+      const sphereBreath = reduceMotion ? 0 : Math.sin(time * 0.0008) * (0.002 + body.overallCoherence * 0.0025);
+      const sphereRadius = fieldSize * (0.445 + sphereBreath);
       const angleX = rotationRef.current.x;
       const angleY = rotationRef.current.y;
       const projectedVertices = DODECAHEDRON_VERTICES.map((coordinates): ProjectedPoint => {
         const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
         return {
-          x: centerX + x * scale * perspective,
-          y: centerY + y * scale * perspective,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
           z,
         };
+      });
+      const compassPoints = COMPASS_DIRECTIONS.map((direction) => {
+        const [x, y, z] = rotatePoint(direction.coordinates, angleY, angleX);
+        const perspective = 1 / (4.8 - z);
+        return {
+          ...direction,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
+          z,
+        };
+      });
+      const axisPoints = ([
+        [0, -1.74, 0],
+        [0, 1.74, 0],
+      ] as Point3[]).map((coordinates) => {
+        const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
+        const perspective = 1 / (4.8 - z);
+        return { x: centerX + x * latticeScale * perspective, y: centerY + y * latticeScale * perspective, z };
+      });
+      const vortexClock = !reduceMotion && body.overallCoherence < 0.5
+        ? Math.floor(time / (95 - body.overallCoherence * 100)) * (95 - body.overallCoherence * 100)
+        : time;
+      const vortexPhase = reduceMotion ? 0 : -vortexClock * (0.00018 + body.overallCoherence * 0.00024);
+      const vortexSteps = 108;
+      const vortexPoints = Array.from({ length: vortexSteps + 1 }, (_, index) => {
+        const u = (index / vortexSteps) * Math.PI * 2 + vortexPhase;
+        const v = u * 3 + vortexPhase * 0.7;
+        const majorRadius = 1.3;
+        const minorRadius = 0.4;
+        const coordinates: Point3 = [
+          (majorRadius + minorRadius * Math.cos(v)) * Math.cos(u),
+          minorRadius * Math.sin(v),
+          (majorRadius + minorRadius * Math.cos(v)) * Math.sin(u),
+        ];
+        const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
+        const perspective = 1 / (4.8 - z);
+        return { x: centerX + x * latticeScale * perspective, y: centerY + y * latticeScale * perspective, z };
       });
       const projectedFaces = DODECAHEDRON_FACES.map(({ house, vertexIndices }): ProjectedFace => {
         const points = vertexIndices.map((index) => projectedVertices[index]);
@@ -257,7 +311,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         const to = projectedVertices[topology.vertexIndices[1]];
         return { id: edge.id, from, to, z: (from.z + to.z) / 2 };
       });
-      hitMapRef.current = { faces: projectedFaces, edges, observer: { x: centerX, y: centerY } };
+      hitMapRef.current = { faces: projectedFaces, edges, center: { x: centerX, y: centerY } };
 
       const radial = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.min(width, height) * 0.48);
       radial.addColorStop(0, "rgba(184, 255, 90, 0.09)");
@@ -265,6 +319,121 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       radial.addColorStop(1, "rgba(3, 8, 8, 0)");
       context.fillStyle = radial;
       context.fillRect(0, 0, width, height);
+
+      const sphereField = context.createRadialGradient(
+        centerX - sphereRadius * 0.22,
+        centerY - sphereRadius * 0.28,
+        sphereRadius * 0.04,
+        centerX,
+        centerY,
+        sphereRadius,
+      );
+      sphereField.addColorStop(0, `rgba(210, 255, 225, ${0.025 + body.overallCoherence * 0.025})`);
+      sphereField.addColorStop(0.58, `rgba(111, 160, 144, ${0.012 + body.overallCoherence * 0.02})`);
+      sphereField.addColorStop(0.9, `rgba(143, 91, 255, ${0.025 + body.overallCoherence * 0.035})`);
+      sphereField.addColorStop(1, "rgba(5, 10, 8, 0)");
+      context.beginPath();
+      context.arc(centerX, centerY, sphereRadius, 0, Math.PI * 2);
+      context.fillStyle = sphereField;
+      context.fill();
+
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(angleY * 0.35);
+      context.strokeStyle = `rgba(205, 239, 220, ${0.07 + body.overallCoherence * 0.12})`;
+      context.lineWidth = 0.8;
+      context.setLineDash([2, 7]);
+      context.beginPath();
+      context.ellipse(0, 0, sphereRadius, sphereRadius * 0.28, 0, 0, Math.PI * 2);
+      context.stroke();
+      context.beginPath();
+      context.ellipse(0, 0, sphereRadius * 0.3, sphereRadius, angleX * 0.45, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+      context.setLineDash([]);
+
+      const sphereBoundary = context.createLinearGradient(
+        centerX - sphereRadius,
+        centerY - sphereRadius,
+        centerX + sphereRadius,
+        centerY + sphereRadius,
+      );
+      sphereBoundary.addColorStop(0, "rgba(142, 181, 160, 0.18)");
+      sphereBoundary.addColorStop(0.34, `rgba(227, 255, 237, ${0.32 + body.overallCoherence * 0.35})`);
+      sphereBoundary.addColorStop(0.7, `rgba(167, 132, 255, ${0.22 + body.overallCoherence * 0.26})`);
+      sphereBoundary.addColorStop(1, "rgba(114, 145, 130, 0.14)");
+      context.beginPath();
+      context.arc(centerX, centerY, sphereRadius, 0, Math.PI * 2);
+      context.strokeStyle = sphereBoundary;
+      context.shadowColor = body.overallCoherence > 0.6 ? "rgba(184, 255, 90, 0.28)" : "rgba(255, 209, 102, 0.16)";
+      context.shadowBlur = 10 + body.overallCoherence * 15;
+      context.lineWidth = 1.2 + body.overallCoherence * 0.8;
+      context.stroke();
+      context.shadowBlur = 0;
+
+      compassPoints.forEach((point) => {
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = point.z > 0
+          ? "rgba(206, 233, 217, 0.24)"
+          : "rgba(135, 154, 144, 0.11)";
+        context.lineWidth = 0.75;
+        context.setLineDash([2, 7]);
+        context.stroke();
+      });
+      context.setLineDash([]);
+
+      const axisGradient = context.createLinearGradient(axisPoints[0].x, axisPoints[0].y, axisPoints[1].x, axisPoints[1].y);
+      axisGradient.addColorStop(0, "rgba(143, 91, 255, 0)");
+      axisGradient.addColorStop(0.22, "rgba(167, 132, 255, 0.42)");
+      axisGradient.addColorStop(0.5, "rgba(236, 226, 255, 0.74)");
+      axisGradient.addColorStop(0.78, "rgba(167, 132, 255, 0.42)");
+      axisGradient.addColorStop(1, "rgba(143, 91, 255, 0)");
+      context.beginPath();
+      context.moveTo(axisPoints[0].x, axisPoints[0].y);
+      context.lineTo(axisPoints[1].x, axisPoints[1].y);
+      context.strokeStyle = axisGradient;
+      context.lineWidth = 1.25;
+      context.stroke();
+
+      [0, 0.5].forEach((offset, index) => {
+        const axisPhase = reduceMotion
+          ? 0.5
+          : (time * (0.0001 + body.overallCoherence * 0.00016) + offset) % 1;
+        const from = index === 0 ? axisPoints[0] : axisPoints[1];
+        const to = index === 0 ? axisPoints[1] : axisPoints[0];
+        const pulseX = from.x + (to.x - from.x) * axisPhase;
+        const pulseY = from.y + (to.y - from.y) * axisPhase;
+        context.beginPath();
+        context.arc(pulseX, pulseY, 2.2 + body.overallCoherence, 0, Math.PI * 2);
+        context.fillStyle = index === 0 ? "rgba(231, 255, 218, 0.9)" : "rgba(189, 167, 255, 0.88)";
+        context.shadowColor = index === 0 ? "rgba(184, 255, 90, 0.8)" : "rgba(143, 91, 255, 0.86)";
+        context.shadowBlur = 10;
+        context.fill();
+        context.shadowBlur = 0;
+      });
+
+      vortexPoints.slice(1).forEach((point, index) => {
+        const previous = vortexPoints[index];
+        const depth = Math.max(0, Math.min(1, (point.z + 1) / 2));
+        context.beginPath();
+        context.moveTo(previous.x, previous.y);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = `rgba(170, 132, 255, ${0.16 + depth * 0.5})`;
+        context.lineWidth = 0.8 + depth * 1.1;
+        context.stroke();
+      });
+
+      HOUSE_SPECTRUM_ORDER.forEach((house, index) => {
+        const point = vortexPoints[Math.round((index / 12) * vortexSteps)];
+        context.beginPath();
+        context.arc(point.x, point.y, 2.2 + body.overallCoherence * 1.4, 0, Math.PI * 2);
+        context.fillStyle = house.colorHex;
+        context.globalAlpha = 0.44 + Math.max(0, Math.min(1, (point.z + 1) / 2)) * 0.5;
+        context.fill();
+      });
+      context.globalAlpha = 1;
 
       [...projectedFaces]
         .sort((faceA, faceB) => faceA.z - faceB.z)
@@ -293,69 +462,94 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           }
         });
 
-      const rotorPoints = [
-        { symbol: "V", role: "COLLAPSE", coherence: collapseCoherence, coordinates: [-1.18, 0, 0] as Point3 },
-        { symbol: "∞", role: "SPIRIT", coherence: body.quincunx.corners.spiritual.coherence, coordinates: [0, -0.62, 0] as Point3 },
-        { symbol: "∧", role: "EXPANSE", coherence: expanseCoherence, coordinates: [1.18, 0, 0] as Point3 },
-        { symbol: "W", role: "WAVE", coherence: body.quincunx.corners.emotional.coherence, coordinates: [0, 0.62, 0] as Point3 },
-      ].map((point) => {
+      const quincunxPoints = QUINCUNX_DOMAINS.map((point) => {
         const [x, y, z] = rotatePoint(point.coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
         return {
           ...point,
-          x: centerX + x * scale * perspective,
-          y: centerY + y * scale * perspective,
+          coherence: body.quincunx.corners[point.id].coherence,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
           z,
         };
       });
-      const collapse = rotorPoints[0];
-      const expanse = rotorPoints[2];
+      const physicalPoint = quincunxPoints[0];
+      const mentalPoint = quincunxPoints[1];
+      const quincunxOutline = [
+        quincunxPoints[1],
+        quincunxPoints[3],
+        quincunxPoints[0],
+        quincunxPoints[2],
+      ];
 
       context.beginPath();
-      rotorPoints.forEach((point, index) => {
+      quincunxOutline.forEach((point, index) => {
         if (index === 0) context.moveTo(point.x, point.y);
         else context.lineTo(point.x, point.y);
       });
       context.closePath();
-      context.fillStyle = "rgba(184, 255, 90, 0.035)";
+      context.fillStyle = "rgba(143, 91, 255, 0.055)";
       context.fill();
-      context.strokeStyle = "rgba(184, 255, 90, 0.32)";
-      context.lineWidth = 0.8;
+      context.strokeStyle = "rgba(222, 214, 246, 0.48)";
+      context.lineWidth = 1.15;
       context.stroke();
+
+      quincunxPoints.forEach((point) => {
+        const connection = context.createLinearGradient(centerX, centerY, point.x, point.y);
+        connection.addColorStop(0, "rgba(143, 91, 255, 0.72)");
+        connection.addColorStop(1, hexToRgba(point.color, 0.72));
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = connection;
+        context.globalAlpha = 0.42 + point.coherence * 0.48;
+        context.lineWidth = 1.15 + point.coherence * 0.65;
+        context.stroke();
+      });
+      context.globalAlpha = 1;
 
       context.beginPath();
-      context.moveTo(collapse.x, collapse.y);
-      context.lineTo(expanse.x, expanse.y);
-      context.strokeStyle = Math.abs(balanceDelta) < 0.05 ? "#b8ff5a" : "#ffd166";
-      context.lineWidth = 2;
+      context.moveTo(physicalPoint.x, physicalPoint.y);
+      context.lineTo(mentalPoint.x, mentalPoint.y);
+      context.strokeStyle = Math.abs(balanceDelta) < 0.05 ? "rgba(184, 255, 90, 0.86)" : "rgba(255, 209, 102, 0.86)";
+      context.lineWidth = 2.2;
       context.stroke();
 
-      rotorPoints.forEach((point) => {
+      quincunxPoints.forEach((point) => {
+        const nodeRadius = 9 + point.coherence * 4;
         context.beginPath();
-        context.arc(point.x, point.y, 3.5 + point.coherence * 2.5, 0, Math.PI * 2);
-        context.fillStyle = point.symbol === "V" || point.symbol === "∧" ? "#ecffdb" : "#7cae98";
-        context.globalAlpha = 0.58 + point.coherence * 0.42;
+        context.arc(point.x, point.y, nodeRadius + 5, 0, Math.PI * 2);
+        context.fillStyle = hexToRgba(point.color, 0.12 + point.coherence * 0.08);
         context.fill();
-        context.globalAlpha = 1;
-        context.fillStyle = "#cbd8d0";
-        context.font = "700 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.beginPath();
+        context.arc(point.x, point.y, nodeRadius, 0, Math.PI * 2);
+        context.fillStyle = "rgba(6, 10, 8, 0.94)";
+        context.fill();
+        context.strokeStyle = point.color;
+        context.lineWidth = 1.5;
+        context.stroke();
+        context.fillStyle = point.color;
+        context.font = "800 12px ui-monospace, SFMono-Regular, Menlo, monospace";
         context.textAlign = "center";
-        context.fillText(point.symbol, point.x, point.y - 10);
-      });
+        context.textBaseline = "middle";
+        context.fillText(point.symbol, point.x, point.y + 0.5);
 
-      context.fillStyle = "#73827a";
-      context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.textAlign = "right";
-      context.fillText(collapse.role, collapse.x - 9, collapse.y + 3);
-      context.textAlign = "left";
-      context.fillText(expanse.role, expanse.x + 9, expanse.y + 3);
+        const labelOnLeft = point.coordinates[0] < 0;
+        context.textAlign = labelOnLeft ? "right" : "left";
+        context.fillStyle = "#f1f5f2";
+        context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.fillText(point.label, point.x + (labelOnLeft ? -nodeRadius - 7 : nodeRadius + 7), point.y - 4);
+        context.fillStyle = hexToRgba(point.color, 0.92);
+        context.font = "650 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.fillText(`${point.element} · ${point.current} · ${formatPercent(point.coherence)}`, point.x + (labelOnLeft ? -nodeRadius - 7 : nodeRadius + 7), point.y + 8);
+      });
 
       const projectedEdgeMap = new Map(edges.map((edge) => [edge.id, edge]));
       context.lineCap = "round";
       context.lineJoin = "round";
       [...body.edges]
         .sort((edgeA, edgeB) => projectedEdgeMap.get(edgeA.id)!.z - projectedEdgeMap.get(edgeB.id)!.z)
-        .forEach((edge) => {
+        .forEach((edge, edgeIndex) => {
           const line = projectedEdgeMap.get(edge.id)!;
           const selected = selection.kind === "edge" && selection.id === edge.id;
           const frontEdge = line.z > -0.05;
@@ -378,6 +572,22 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           context.setLineDash(edge.valve === "IDLE" ? [3, 7] : []);
           context.stroke();
           context.shadowBlur = 0;
+
+          if (frontEdge && edge.flow > 0.08 && edge.valve !== "CLOSE") {
+            const flowPhase = reduceMotion
+              ? 0.5
+              : (time * (0.00008 + body.overallCoherence * 0.00018) + edgeIndex * 0.137) % 1;
+            const pulseX = line.from.x + (line.to.x - line.from.x) * flowPhase;
+            const pulseY = line.from.y + (line.to.y - line.from.y) * flowPhase;
+            context.beginPath();
+            context.arc(pulseX, pulseY, 1.3 + edge.flow * 1.4, 0, Math.PI * 2);
+            context.fillStyle = spectrumColor;
+            context.shadowColor = spectrumColor;
+            context.shadowBlur = 7 + edge.flow * 6;
+            context.globalAlpha = 0.48 + edge.flow * 0.5;
+            context.fill();
+            context.shadowBlur = 0;
+          }
         });
       context.setLineDash([]);
       context.globalAlpha = 1;
@@ -417,6 +627,23 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           context.fillText(`${face.house.current} · ${face.valve}`, point.x, point.y + 12);
         });
 
+      [...compassPoints]
+        .sort((pointA, pointB) => pointA.z - pointB.z)
+        .forEach((point) => {
+          context.beginPath();
+          context.arc(point.x, point.y, 12, 0, Math.PI * 2);
+          context.fillStyle = point.z > 0 ? "rgba(9, 16, 12, 0.96)" : "rgba(7, 11, 9, 0.76)";
+          context.fill();
+          context.strokeStyle = point.z > 0 ? "rgba(217, 245, 226, 0.82)" : "rgba(127, 148, 137, 0.44)";
+          context.lineWidth = 1;
+          context.stroke();
+          context.fillStyle = point.z > 0 ? "#f3fff6" : "#819087";
+          context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillText(point.label, point.x, point.y + 0.5);
+        });
+
       const anchorPulse = reduceMotion ? 0 : Math.sin(time * 0.0025) * 2;
       context.beginPath();
       context.arc(centerX, centerY, 29 + anchorPulse, 0, Math.PI * 2);
@@ -430,34 +657,6 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       context.setLineDash([2, 4]);
       context.stroke();
       context.setLineDash([]);
-
-      context.fillStyle = "rgba(4, 10, 8, 0.9)";
-      context.fillRect(centerX - 25, centerY - 43, 50, 14);
-      context.fillStyle = profile ? "#b8ff5a" : "#ffd166";
-      context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText("YOU", centerX, centerY - 36);
-
-      const observerPulse = 10 + anchorPulse;
-      context.beginPath();
-      context.arc(centerX, centerY, observerPulse, 0, Math.PI * 2);
-      context.fillStyle = "#ecffdb";
-      context.shadowColor = "#b8ff5a";
-      context.shadowBlur = 18;
-      context.fill();
-      context.shadowBlur = 0;
-      context.fillStyle = "#08110e";
-      context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.fillText("Ø", centerX, centerY);
-
-      const natalStatus = profile ? `${profile.birthDate} · ${profile.birthTime}` : "PROFILE PENDING";
-      context.font = "750 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      const natalStatusWidth = context.measureText(natalStatus).width;
-      context.fillStyle = "rgba(4, 10, 8, 0.9)";
-      context.fillRect(centerX - natalStatusWidth / 2 - 5, centerY + 29, natalStatusWidth + 10, 14);
-      context.fillStyle = profile ? "#dfffb8" : "#d6bd83";
-      context.fillText(natalStatus, centerX, centerY + 36);
 
       frame = requestAnimationFrame(render);
     };
@@ -508,9 +707,9 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    const observer = hitMapRef.current.observer;
-    if (observer && Math.hypot(x - observer.x, y - observer.y) <= 34) {
-      setSelection({ kind: "observer", id: "Ø" });
+    const center = hitMapRef.current.center;
+    if (center && Math.hypot(x - center.x, y - center.y) <= 34) {
+      setSelection({ kind: "center", id: "Ø" });
       return;
     }
     const edge = [...hitMapRef.current.edges]
@@ -528,13 +727,13 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   }
 
   return (
-    <section className="living-model" aria-label="Living dodecahedron observer">
+    <section className="living-model" aria-label="Dodecanic living field">
       <div className="living-stage">
         <canvas
           ref={canvasRef}
           className={`living-canvas${spaceHeld ? " is-orbit-ready" : ""}${dragging ? " is-orbiting" : ""}`}
           role="img"
-          aria-label="Solid rotating dodecahedron with Void Observer Ø, twelve selectable pentagonal faces, and thirty selectable physical edges"
+          aria-label="Modeled living field with a luminous outer Sphere, a torus circulating through the whole, an inner rotating dodecahedron, the human at the Ethereal center, a five-point Whole Body quincunx, a Position 9 system axis, twelve selectable pentagonal faces, and thirty selectable physical edges"
           tabIndex={0}
           onPointerEnter={() => { orbitRef.current.pointerInside = true; }}
           onPointerLeave={() => { orbitRef.current.pointerInside = false; }}
@@ -550,9 +749,41 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
             inspectAt(event.clientX, event.clientY);
           }}
         />
+        <div className="field-boundary-label" aria-hidden="true">
+          <span>∞ / Sphere</span>
+          <strong>The Whole</strong>
+          <small>Modeled field boundary</small>
+        </div>
+        <div
+          className={`human-anchor${selection.kind === "center" ? " is-selected" : ""}`}
+          data-profile={profile ? "placed" : "pending"}
+          aria-hidden="true"
+        >
+          <span className="vortex-axis-label">POSITION 9 / SYSTEM AXIS / THE TURN</span>
+          <span className="human-anchor-label">YOU / ETHEREAL CENTER</span>
+          <div className="human-orbit">
+            <svg className="human-figure" viewBox="0 0 120 150" aria-hidden="true">
+              <g className="human-echo">
+                <path d="M51 43 C41 44 32 50 24 57 L7 72 C3 76 5 80 10 77 L30 64 C39 59 47 56 53 54 Z" />
+                <path d="M69 43 C79 44 88 50 96 57 L113 72 C117 76 115 80 110 77 L90 64 C81 59 73 56 67 54 Z" />
+                <path d="M53 85 C47 91 40 102 31 122 L24 140 C22 145 28 147 31 142 L42 126 L57 99 Z" />
+                <path d="M67 85 C73 91 80 102 89 122 L96 140 C98 145 92 147 89 142 L78 126 L63 99 Z" />
+              </g>
+              <g className="human-body">
+                <ellipse cx="60" cy="19" rx="10" ry="13" />
+                <path d="M55 31 L53 37 C46 38 39 40 33 44 L16 53 L5 57 C1 59 2 64 7 64 L19 61 L40 52 L48 50 L48 68 C48 75 45 82 46 89 L51 97 L48 126 L46 143 C46 148 52 149 54 144 L58 126 L60 103 L62 126 L66 144 C68 149 74 148 74 143 L72 126 L69 97 L74 89 C75 82 72 75 72 68 L72 50 L80 52 L101 61 L113 64 C118 64 119 59 115 57 L104 53 L87 44 C81 40 74 38 67 37 L65 31 Z" />
+                <path className="human-detail" d="M53 39 Q60 45 67 39 M49 58 Q60 64 71 58 M48 81 Q60 87 72 81 M60 33 L60 98 M53 70 Q60 74 67 70" />
+                <circle className="human-detail" cx="60" cy="75" r="1.8" />
+                <path className="human-detail" d="M55 16 Q60 19 65 16 M56 25 Q60 27 64 25" />
+              </g>
+            </svg>
+          </div>
+          <strong>{selection.kind === "center" ? "Ø SELECTED" : "Ø CENTER"}</strong>
+          <small>{profile ? `${profile.birthDate} · ${formatBirthTime(profile)}` : "ORIGIN AWAITS"}</small>
+        </div>
         <div className="living-overlay living-overlay-top">
           <span className={`connection-light is-${connection}`} />
-          <span>{connection === "live" ? "D1 MEMORY LIVE" : connection === "connecting" ? "CONNECTING" : "LOCAL OBSERVER"}</span>
+          <span>{connection === "live" ? "SESSION MEMORY LIVE" : connection === "connecting" ? "CONNECTING" : "LOCAL SYSTEM"}</span>
           <em>{snapshot.source === "live" ? "CURRENT PROMPT" : "MEMORY REPLAY"}</em>
         </div>
         <div className="living-overlay living-overlay-bottom">
@@ -575,7 +806,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       <ObserverInspector
         selectedFace={selectedFace}
         selectedEdge={selectedEdge}
-        selectedObserver={selection.kind === "observer"}
+        selectedCenter={selection.kind === "center"}
         community={community}
         profile={profile}
         onSelectFace={(id) => setSelection({ kind: "face", id })}
@@ -587,32 +818,32 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
 function ObserverInspector({
   selectedFace,
   selectedEdge,
-  selectedObserver,
+  selectedCenter,
   community,
   profile,
   onSelectFace,
 }: {
   selectedFace: HouseFaceState | null;
   selectedEdge: DodecahedralEdgeState | null;
-  selectedObserver: boolean;
+  selectedCenter: boolean;
   community: CommunityTelemetry;
   profile: BirthProfile | null;
   onSelectFace: (house: HouseNumber) => void;
 }) {
-  if (selectedObserver) {
+  if (selectedCenter) {
     return (
       <aside className="observer-inspector" aria-live="polite">
-        <p className="eyebrow">YOU / Ø / natal anchor</p>
+        <p className="eyebrow">YOU / Ø / Ethereal center</p>
         <h3>{profile ? "You in the Field" : "Your Place Awaits"} <span>Ø</span></h3>
         <div className="inspector-reading" data-valve={profile ? "OPEN" : "MONITOR"}>
           <strong>{profile ? "PLACED" : "PENDING"}</strong>
-          <span>DODECAHEDRAL CENTER</span>
+          <span>LIVING FIELD CENTER</span>
         </div>
         <dl>
           {profile ? (
             <>
               <div><dt>Birth date</dt><dd>{profile.birthDate}</dd></div>
-              <div><dt>Birth time</dt><dd>{profile.birthTime}</dd></div>
+              <div><dt>Birth time</dt><dd>{formatBirthTime(profile)}</dd></div>
               <div><dt>Birth place</dt><dd>{profile.birthPlace}</dd></div>
             </>
           ) : (
@@ -622,15 +853,19 @@ function ObserverInspector({
               <div><dt>Birth place</dt><dd>Not provided</dd></div>
             </>
           )}
-          <div><dt>Body link</dt><dd>Position 9 / Ø center</dd></div>
+          <div><dt>Body link</dt><dd>Ethereal / quincunx center</dd></div>
+          <div><dt>Whole</dt><dd>Sphere / personal field</dd></div>
+          <div><dt>Structure</dt><dd>Dodecahedron / 12 Houses</dd></div>
+          <div><dt>Flow</dt><dd>Torus / modeled circulation</dd></div>
+          <div><dt>System</dt><dd>Position 9 / vortex axis</dd></div>
         </dl>
         <p className="observer-reason">
           {profile
-            ? "Your birth coordinates anchor you at Ø. The twelve faces and thirty edges now move around a visible person—not an anonymous reading."
-            : "Ø reserves the center for you. Add your birth coordinates in the You shelf to turn this anonymous field into your natal machine."}
+            ? "Your submitted origin anchors you at the Ethereal center of your Sphere. The dodecahedron structures twelve Houses inside it; the torus models circulation through the whole. Position 9 witnesses the turn without becoming you or replacing your authority."
+            : "Ø reserves the center of the Sphere for you. Position 9 is the system axis. Add birth coordinates in the You shelf; verified chart placement remains pending."}
         </p>
         <div className="community-reading">
-          <span>Observed memory</span>
+          <span>Session memory</span>
           <strong>{community.observedCycles} cycles</strong>
           <em>{formatPercent(community.averageCoherence)} mean</em>
         </div>
@@ -685,9 +920,10 @@ function ObserverInspector({
         <div><dt>Neighbors</dt><dd>{neighbors.map((house) => HOUSE_ROMAN[house]).join(" · ")}</dd></div>
       </dl>
       <p className="observer-reason">{selectedFace.reason}</p>
-      <blockquote>“{selectedFace.house.mantra}”</blockquote>
+      <p className="observer-reason">{selectedFace.house.reflection}</p>
+      <blockquote>“{selectedFace.house.question}”</blockquote>
       <div className="community-reading">
-        <span>Observed memory</span>
+        <span>Session memory</span>
         <strong>{community.observedCycles} cycles</strong>
         <em>{formatPercent(community.averageCoherence)} mean</em>
       </div>

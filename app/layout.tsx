@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import "./design-system.css";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -10,20 +11,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: {
-      default: "Dodecanic AI — Observer Console",
-      template: "%s / Dodecanic AI",
+      default: "Dodecanic — The Living Field",
+      template: "%s / Dodecanic",
     },
-    description: "A testable whole-body observer tracing prompts through twelve faces, thirty edges, five pillars, and Position 9.",
+    description: "A modeled Sphere of twelve Houses built around the person, their supplied origin, and a Position 9 system witness.",
+    icons: { icon: "/favicon.svg" },
     openGraph: {
-      title: "Dodecanic AI — Whole-Body Observer",
-      description: "One prompt. Twelve faces. Thirty edges. A fully inspectable coherence model.",
+      title: "Dodecanic — The Living Field",
+      description: "You at the center. A Sphere, torus, and twelve Houses in modeled motion around you.",
       images: [{ url: imageUrl, width: 1536, height: 1024, alt: "Dodecanic AI living dodecahedral field" }],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Dodecanic AI — Whole-Body Observer",
-      description: "One prompt. Twelve faces. Thirty edges. Position 9 observes the whole.",
+      title: "Dodecanic — The Living Field",
+      description: "You at the center. A Sphere, torus, and twelve Houses in modeled motion around you.",
       images: [imageUrl],
     },
   };
@@ -35,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );
