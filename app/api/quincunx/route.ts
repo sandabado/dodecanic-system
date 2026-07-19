@@ -2,6 +2,9 @@ import { listQuincunxReadings, saveQuincunxReading } from "@/db/quincunx";
 import { calculateQuincunxState, type Corner, type CornerReadings, type Position9State } from "@/lib/quincunx/engine";
 import type { HouseNumber } from "@/types/houses";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const RESPONSE_HEADERS = { "Cache-Control": "no-store" };
 const CORNERS: Corner[] = ["physical", "mental", "emotional", "spiritual"];
 
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
   try {
     const limit = Number(new URL(request.url).searchParams.get("limit") ?? 10);
     const readings = await listQuincunxReadings(Number.isFinite(limit) ? limit : 10);
-    return Response.json({ readings: readings.map((reading) => ({ ...reading, persisted: true })) }, { headers: RESPONSE_HEADERS });
+    return Response.json({ readings: readings.map((reading) => ({ ...reading, persisted: false })) }, { headers: RESPONSE_HEADERS });
   } catch {
     return Response.json({ readings: [], persisted: false }, { headers: RESPONSE_HEADERS });
   }
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
         body.stressLevels,
         state,
       );
-      return Response.json({ reading: { ...reading, persisted: true } }, { status: 201, headers: RESPONSE_HEADERS });
+      return Response.json({ reading: { ...reading, persisted: false } }, { status: 201, headers: RESPONSE_HEADERS });
     } catch {
       return Response.json({
         reading: {

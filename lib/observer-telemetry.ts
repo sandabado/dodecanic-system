@@ -1,4 +1,5 @@
 import type { CycleResult, ValveAction } from "@/lib/types";
+import type { ObserverMemorySummary } from "@/lib/observer-memory";
 import { calculateWholeBodyState, type WholeBodyState } from "@/lib/quincunx/whole-body";
 
 export interface ObserverSnapshot {
@@ -20,6 +21,7 @@ export interface CommunityTelemetry {
 export interface ObserverTelemetryPayload {
   history: ObserverSnapshot[];
   community: CommunityTelemetry;
+  memory: ObserverMemorySummary;
   persisted: boolean;
 }
 

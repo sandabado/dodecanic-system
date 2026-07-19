@@ -1,13 +1,13 @@
-import { env } from "cloudflare:workers";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "./schema";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
+import type * as schema from "./schema";
 
-export function getDb() {
-  if (!env.DB) {
-    throw new Error(
-      "Cloudflare D1 binding `DB` is unavailable. Set the `d1` field in .openai/hosting.json to `DB` or let your control plane inject the real binding values before using the database."
-    );
-  }
-
-  return drizzle(env.DB, { schema });
+/**
+ * The application routes use the runtime-neutral repositories in this folder.
+ * This legacy accessor remains typed for the isolated D1 example, but cannot be
+ * called from the Vercel application without an explicitly supplied adapter.
+ */
+export function getDb(): DrizzleD1Database<typeof schema> {
+  throw new Error(
+    "No SQL adapter is configured. Use the runtime-neutral cycle and quincunx repositories instead.",
+  );
 }

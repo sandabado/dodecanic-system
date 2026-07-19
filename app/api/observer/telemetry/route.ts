@@ -1,9 +1,12 @@
-import { listCycles } from "@/db/cycles";
+import { getObserverMemorySummary, listCycles } from "@/db/cycles";
 import {
   createObserverSnapshot,
   summarizeObserverHistory,
   type ObserverTelemetryPayload,
 } from "@/lib/observer-telemetry";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
@@ -28,13 +31,22 @@ export async function GET(request: Request) {
     const payload: ObserverTelemetryPayload = {
       history: cycles.map((cycle) => createObserverSnapshot(cycle, "memory")),
       community: summarizeObserverHistory(cycles),
-      persisted: true,
+      memory: await getObserverMemorySummary(cycles.length),
+      persisted: false,
     };
     return Response.json(payload, { headers });
   } catch {
     const payload: ObserverTelemetryPayload = {
       history: [],
       community: summarizeObserverHistory([]),
+      memory: {
+        shortTermCapacity: 50,
+        shortTermSamples: 0,
+        longTermPatterns: 0,
+        reinforcedPatterns: 0,
+        fadedPatterns: 0,
+        topPatterns: [],
+      },
       persisted: false,
     };
     return Response.json(payload, { headers });

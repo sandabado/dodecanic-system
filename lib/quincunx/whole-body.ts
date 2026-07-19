@@ -216,26 +216,26 @@ export function calculateWholeBodyState(result: CycleResult): WholeBodyState {
     };
     return pillarState(corner, corner, currentByCorner[corner], scores[corner], signals[corner]);
   });
+  const flowingEdges = edges.filter((edge) => edge.flow > 0);
+  const edgeCoherence = flowingEdges.length
+    ? flowingEdges.reduce((sum, edge) => sum + (edge.valve === "CLOSE" ? 0.2 : edge.valve === "MONITOR" ? 0.55 : 1) * edge.flow, 0) / flowingEdges.length
+    : quincunx.overallCoherence;
   const aethericCoherence = clamp(
-    quincunx.overallCoherence * 0.55
-      + triangle.coherence * 0.45
+    quincunx.overallCoherence * 0.7
+      + clamp(edgeCoherence) * 0.3
       + (activeCurrents.has("8") ? 0.06 : 0)
       + (activeCurrents.has("◇") ? 0.03 : 0)
       - (result.finalValve === "CLOSE" ? 0.12 : result.finalValve === "MONITOR" ? 0.04 : 0),
   );
   pillars.push(pillarState("aetheric", "aetheric", "◯", aethericCoherence, [
     `${activeCurrents.size} currents integrated`,
-    `Triangle Trust ${Math.round(triangle.coherence * 100)}%`,
+    `Position 9 impartial`,
     `Valve ${result.finalValve}`,
   ]));
 
-  const flowingEdges = edges.filter((edge) => edge.flow > 0);
-  const edgeCoherence = flowingEdges.length
-    ? flowingEdges.reduce((sum, edge) => sum + (edge.valve === "CLOSE" ? 0.2 : edge.valve === "MONITOR" ? 0.55 : 1) * edge.flow, 0) / flowingEdges.length
-    : quincunx.overallCoherence;
   const overallCoherence = Math.pow(
-    quincunx.overallCoherence * triangle.coherence * clamp(edgeCoherence) * aethericCoherence,
-    1 / 4,
+    quincunx.overallCoherence * clamp(edgeCoherence) * aethericCoherence,
+    1 / 3,
   );
   const valve = edges.some((edge) => edge.flow === 1 && edge.valve === "CLOSE")
     ? "CLOSE"

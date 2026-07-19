@@ -1,6 +1,9 @@
 import { listCycles, saveCycle } from "@/db/cycles";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",

@@ -1,98 +1,150 @@
-import { env } from "cloudflare:workers";
-import type { CycleResult, Interaction, Signal, ValveAction } from "@/lib/types";
+import type { ObserverMemorySummary, ObserverPatternSummary } from "@/lib/observer-memory";
+import { calculateWholeBodyState } from "@/lib/quincunx/whole-body";
+import type { CycleResult } from "@/lib/types";
 
-type CycleRow = {
-  id: string;
-  input_text: string;
-  input_signal: string;
-  state_byte: number;
-  active_currents: string;
-  interactions: string;
-  final_valve: ValveAction;
-  response: string;
-  created_at: string;
-};
-
-let schemaReady: Promise<void> | undefined;
-
-function getBinding() {
-  const binding = env.DB;
-  if (!binding) throw new Error("D1 binding DB is unavailable");
-  return binding;
+interface ObserverStore {
+  cycles: CycleResult[];
+  patterns: Map<string, ObserverPatternSummary>;
 }
 
-function ensureSchema() {
-  if (!schemaReady) {
-    const db = getBinding();
-    schemaReady = db
-      .batch([
-        db.prepare(`CREATE TABLE IF NOT EXISTS cycles (
-          id TEXT PRIMARY KEY,
-          input_text TEXT NOT NULL,
-          input_signal TEXT NOT NULL,
-          state_byte INTEGER NOT NULL,
-          active_currents TEXT NOT NULL,
-          interactions TEXT NOT NULL,
-          final_valve TEXT NOT NULL CHECK (final_valve IN ('OPEN', 'MONITOR', 'CLOSE')),
-          response TEXT NOT NULL,
-          created_at TEXT NOT NULL
-        )`),
-        db.prepare("CREATE INDEX IF NOT EXISTS cycles_created_at_idx ON cycles (created_at DESC)"),
-      ])
-      .then(() => undefined)
-      .catch((error: unknown) => {
-        schemaReady = undefined;
-        throw error;
-      });
+const MAX_CYCLES = 50;
+
+function getStore(): ObserverStore {
+  const serverGlobal = globalThis as typeof globalThis & {
+    __dodecanicObserverStore?: ObserverStore;
+  };
+
+  if (!serverGlobal.__dodecanicObserverStore) {
+    serverGlobal.__dodecanicObserverStore = {
+      cycles: [],
+      patterns: new Map<string, ObserverPatternSummary>(),
+    };
   }
-  return schemaReady;
+
+  return serverGlobal.__dodecanicObserverStore;
 }
 
-function fromRow(row: CycleRow): CycleResult {
+function cloneCycle(cycle: CycleResult): CycleResult {
+  return structuredClone(cycle);
+}
+
+function patternId(signature: string): string {
+  return `pattern-${Array.from(signature).reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 7).toString(16)}`;
+}
+
+function effectiveConfidence(pattern: ObserverPatternSummary, now = Date.now()): ObserverPatternSummary {
+  const ageDays = Math.max(0, now - new Date(pattern.lastSeen).getTime()) / 86_400_000;
+  const confidenceScore = Math.max(0, pattern.confidenceScore - Math.floor(ageDays / 30) * 0.05);
   return {
-    id: row.id,
-    inputText: row.input_text,
-    inputSignal: JSON.parse(row.input_signal) as Signal,
-    stateByte: row.state_byte,
-    activeCurrents: JSON.parse(row.active_currents) as string[],
-    interactions: JSON.parse(row.interactions) as Interaction[],
-    finalValve: row.final_valve,
-    response: row.response,
-    createdAt: row.created_at,
-    persisted: true,
+    ...pattern,
+    confidenceScore,
+    faded: confidenceScore < pattern.confidenceScore,
   };
 }
 
-export async function saveCycle(cycle: CycleResult): Promise<CycleResult> {
-  await ensureSchema();
-  const db = getBinding();
-  const id = crypto.randomUUID();
-  await db
-    .prepare(`INSERT INTO cycles (
-      id, input_text, input_signal, state_byte, active_currents,
-      interactions, final_valve, response, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(
-      id,
-      cycle.inputText,
-      JSON.stringify(cycle.inputSignal),
-      cycle.stateByte,
-      JSON.stringify(cycle.activeCurrents),
-      JSON.stringify(cycle.interactions),
-      cycle.finalValve,
-      cycle.response,
-      cycle.createdAt,
-    )
-    .run();
+function recordObserverMemory(cycle: CycleResult): void {
+  const store = getStore();
+  const body = calculateWholeBodyState(cycle);
+  const currentSignature = cycle.activeCurrents.slice().sort().join("+") || "none";
+  const patterns: Array<{
+    patternType: ObserverPatternSummary["patternType"];
+    signature: string;
+    outcome: ObserverPatternSummary["outcome"];
+  }> = [{
+    patternType: "signal_pattern",
+    signature: `currents:${currentSignature}`,
+    outcome: cycle.finalValve === "OPEN" ? "success" : "neutral",
+  }];
 
-  return { ...cycle, id, persisted: true };
+  for (const interaction of cycle.interactions.filter((item) => item.valveAction === "CLOSE")) {
+    patterns.push({
+      patternType: "breach_signature",
+      signature: `breach:${interaction.currentA}+${interaction.currentB}@${interaction.lookupCode}`,
+      outcome: "neutral",
+    });
+  }
+
+  if (body.overallCoherence >= 0.8) {
+    patterns.push({
+      patternType: "optimal_config",
+      signature: `optimal:${cycle.finalValve}:${currentSignature}`,
+      outcome: "success",
+    });
+  }
+
+  for (const pattern of patterns) {
+    const existing = store.patterns.get(pattern.signature);
+    if (existing) {
+      store.patterns.set(pattern.signature, {
+        ...existing,
+        outcome: pattern.outcome,
+        confidenceScore: Math.min(1, existing.confidenceScore + 0.05),
+        occurrenceCount: existing.occurrenceCount + 1,
+        lastSeen: cycle.createdAt,
+        faded: false,
+      });
+      continue;
+    }
+
+    store.patterns.set(pattern.signature, {
+      id: patternId(pattern.signature),
+      patternType: pattern.patternType,
+      signature: pattern.signature,
+      outcome: pattern.outcome,
+      confidenceScore: 0.5,
+      occurrenceCount: 1,
+      firstSeen: cycle.createdAt,
+      lastSeen: cycle.createdAt,
+      faded: false,
+    });
+  }
+}
+
+/**
+ * Stores the cycle for the lifetime of the current Node process. This keeps
+ * local development and warm Vercel functions stateful without binding the
+ * application bundle to a Cloudflare runtime.
+ */
+export async function saveCycle(cycle: CycleResult): Promise<CycleResult> {
+  const stored: CycleResult = {
+    ...cloneCycle(cycle),
+    id: crypto.randomUUID(),
+    persisted: false,
+  };
+  const store = getStore();
+  store.cycles.unshift(stored);
+  if (store.cycles.length > MAX_CYCLES) store.cycles.length = MAX_CYCLES;
+
+  try {
+    recordObserverMemory(stored);
+  } catch {
+    // Consolidation is best-effort and must not discard the committed cycle.
+  }
+
+  return cloneCycle(stored);
 }
 
 export async function listCycles(limit = 12): Promise<CycleResult[]> {
-  await ensureSchema();
-  const result = await getBinding()
-    .prepare("SELECT * FROM cycles ORDER BY created_at DESC LIMIT ?")
-    .bind(Math.min(Math.max(limit, 1), 50))
-    .all<CycleRow>();
-  return result.results.map(fromRow);
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), MAX_CYCLES);
+  return getStore().cycles.slice(0, safeLimit).map(cloneCycle);
+}
+
+export async function listObserverPatterns(limit = 12): Promise<ObserverPatternSummary[]> {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 50);
+  return [...getStore().patterns.values()]
+    .map((pattern) => effectiveConfidence(pattern))
+    .sort((left, right) => right.confidenceScore - left.confidenceScore || right.lastSeen.localeCompare(left.lastSeen))
+    .slice(0, safeLimit);
+}
+
+export async function getObserverMemorySummary(shortTermSamples = 0): Promise<ObserverMemorySummary> {
+  const patterns = await listObserverPatterns(50);
+  return {
+    shortTermCapacity: 50,
+    shortTermSamples,
+    longTermPatterns: patterns.length,
+    reinforcedPatterns: patterns.filter((pattern) => pattern.occurrenceCount > 1).length,
+    fadedPatterns: patterns.filter((pattern) => pattern.faded).length,
+    topPatterns: patterns.slice(0, 8),
+  };
 }

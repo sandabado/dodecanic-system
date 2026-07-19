@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const imageUrl = new URL("/og.jpg", `${protocol}://${host}`).toString();
+  const imageUrl = new URL("/og.png", `${protocol}://${host}`).toString();
 
   return {
     title: {
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: "Dodecanic AI — Whole-Body Observer",
       description: "One prompt. Twelve faces. Thirty edges. A fully inspectable coherence model.",
-      images: [{ url: imageUrl, width: 1200, height: 800, alt: "Dodecanic AI whole-body observer" }],
+      images: [{ url: imageUrl, width: 1536, height: 1024, alt: "Dodecanic AI living dodecahedral field" }],
       type: "website",
     },
     twitter: {
