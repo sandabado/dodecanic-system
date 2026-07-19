@@ -181,12 +181,30 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           radius: 17 + face.coherence * 7,
         };
       });
+      const minimumInteriorRadius = Math.min(width, height) * 0.18;
+      const interiorFaces = projected.map((point) => {
+        const dx = point.x - centerX;
+        const dy = point.y - centerY;
+        const distance = Math.hypot(dx, dy);
+        if (distance >= minimumInteriorRadius) return point;
+        const ringIndex = HOUSE_RING_ORDER.indexOf(point.house);
+        const fallbackAngle = -Math.PI / 2 + (ringIndex * Math.PI * 2) / HOUSE_RING_ORDER.length;
+        const angle = distance > 8 ? Math.atan2(dy, dx) : fallbackAngle;
+        return {
+          ...point,
+          x: centerX + Math.cos(angle) * minimumInteriorRadius,
+          y: centerY + Math.sin(angle) * minimumInteriorRadius,
+          radius: Math.max(point.radius, 16),
+        };
+      });
+      const useOuterRing = window.innerWidth <= 780;
+      const displayFaces = useOuterRing ? ringFaces : interiorFaces;
       const edges = body.edges.map((edge) => ({
         id: edge.id,
         from: faceMap.get(edge.houseA.number)!,
         to: faceMap.get(edge.houseB.number)!,
       }));
-      hitMapRef.current = { faces: ringFaces, edges, observer: { x: centerX, y: centerY } };
+      hitMapRef.current = { faces: displayFaces, edges, observer: { x: centerX, y: centerY } };
 
       const radial = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.min(width, height) * 0.48);
       radial.addColorStop(0, "rgba(184, 255, 90, 0.09)");
@@ -252,7 +270,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       context.textAlign = "left";
       context.fillText(expanse.role, expanse.x + 9, expanse.y + 3);
 
-      ringFaces.forEach((point) => {
+      displayFaces.forEach((point) => {
         const geometry = faceMap.get(point.house)!;
         context.beginPath();
         context.moveTo(geometry.x, geometry.y);
@@ -285,7 +303,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       context.setLineDash([]);
       context.globalAlpha = 1;
 
-      ringFaces.forEach((point) => {
+      displayFaces.forEach((point) => {
         const face = body.faces.find((item) => item.house.number === point.house)!;
         const selected = selection.kind === "face" && selection.id === point.house;
         drawPentagon(context, point.x, point.y, point.radius);
