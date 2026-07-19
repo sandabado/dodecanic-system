@@ -181,20 +181,17 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           radius: 17 + face.coherence * 7,
         };
       });
-      const minimumInteriorRadius = Math.min(width, height) * 0.18;
-      const interiorFaces = projected.map((point) => {
-        const dx = point.x - centerX;
-        const dy = point.y - centerY;
-        const distance = Math.hypot(dx, dy);
-        if (distance >= minimumInteriorRadius) return point;
-        const ringIndex = HOUSE_RING_ORDER.indexOf(point.house);
-        const fallbackAngle = -Math.PI / 2 + (ringIndex * Math.PI * 2) / HOUSE_RING_ORDER.length;
-        const angle = distance > 8 ? Math.atan2(dy, dx) : fallbackAngle;
+      const interiorRadiusX = Math.min(width, height) * 0.28;
+      const interiorRadiusY = Math.min(width, height) * 0.22;
+      const interiorFaces = HOUSE_RING_ORDER.map((house, index) => {
+        const geometry = faceMap.get(house)!;
+        const face = body.faces.find((item) => item.house.number === house)!;
+        const angle = -Math.PI / 2 + (index * Math.PI * 2) / HOUSE_RING_ORDER.length + rotationRef.current;
         return {
-          ...point,
-          x: centerX + Math.cos(angle) * minimumInteriorRadius,
-          y: centerY + Math.sin(angle) * minimumInteriorRadius,
-          radius: Math.max(point.radius, 16),
+          ...geometry,
+          x: centerX + Math.cos(angle) * interiorRadiusX,
+          y: centerY + Math.sin(angle) * interiorRadiusY,
+          radius: 16 + face.coherence * 6,
         };
       });
       const useOuterRing = window.innerWidth <= 780;
@@ -306,20 +303,25 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
       displayFaces.forEach((point) => {
         const face = body.faces.find((item) => item.house.number === point.house)!;
         const selected = selection.kind === "face" && selection.id === point.house;
+        const wisdom = point.house === 9;
         drawPentagon(context, point.x, point.y, point.radius);
-        context.fillStyle = selected ? "rgba(236, 255, 219, 0.22)" : "rgba(8, 18, 16, 0.88)";
+        context.fillStyle = selected
+          ? "rgba(236, 255, 219, 0.22)"
+          : wisdom
+            ? "rgba(255, 209, 102, 0.14)"
+            : "rgba(8, 18, 16, 0.88)";
         context.fill();
-        context.strokeStyle = COLORS[face.valve];
-        context.globalAlpha = face.active || selected ? 1 : 0.52;
-        context.lineWidth = selected ? 3 : 1.35;
+        context.strokeStyle = wisdom ? "#ffd166" : COLORS[face.valve];
+        context.globalAlpha = face.active || selected || wisdom ? 1 : 0.52;
+        context.lineWidth = selected ? 3 : wisdom ? 2.5 : 1.35;
         context.stroke();
         context.globalAlpha = 1;
-        context.fillStyle = selected ? "#ecffdb" : "#d9e4dd";
+        context.fillStyle = selected ? "#ecffdb" : wisdom ? "#ffe7a3" : "#d9e4dd";
         context.font = `700 ${selected ? 12 : 10}px ui-monospace, SFMono-Regular, Menlo, monospace`;
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText(`${point.house.toString().padStart(2, "0")} ${face.house.current}`, point.x, point.y - 4);
-        context.fillStyle = selected ? "#b8ff5a" : "#8fa198";
+        context.fillStyle = selected ? "#b8ff5a" : wisdom ? "#ffd166" : "#8fa198";
         context.font = "700 7px ui-monospace, SFMono-Regular, Menlo, monospace";
         context.fillText(face.house.name.toUpperCase(), point.x, point.y + 10);
       });

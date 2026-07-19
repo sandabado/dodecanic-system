@@ -127,6 +127,8 @@ test("updates the whole-body model from prompt input in real time", async () => 
   assert.match(livingSource, /const ringFaces = HOUSE_RING_ORDER\.map/);
   assert.match(livingSource, /const useOuterRing = window\.innerWidth <= 780/);
   assert.match(livingSource, /const displayFaces = useOuterRing \? ringFaces : interiorFaces/);
+  assert.match(livingSource, /const interiorFaces = HOUSE_RING_ORDER\.map/);
+  assert.match(livingSource, /const wisdom = point\.house === 9/);
   assert.match(livingSource, /face\.house\.name\.toUpperCase\(\)/);
   assert.match(livingSource, /COLLAPSE/);
   assert.match(livingSource, /EXPANSE/);
