@@ -54,7 +54,7 @@ export function BirthPortal() {
     } catch {
       // The field remains usable when private browsing blocks session storage.
     }
-    window.location.assign("/quincunx");
+    window.location.assign("/loading");
   }
 
   return (

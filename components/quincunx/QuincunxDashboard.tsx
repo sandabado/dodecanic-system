@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LivingDodecahedron } from "@/components/dodecahedron/LivingDodecahedron";
+import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useObserverTelemetry } from "@/hooks/useObserverTelemetry";
 import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
@@ -17,7 +18,7 @@ import { WholeBodyMonitor } from "./WholeBodyMonitor";
 
 const INITIAL_PROMPT = "Review the previous plan, but verify every conflict before we finalize the agreement.";
 
-type FieldShelf = "profile" | "memory" | "time" | "diagnostics" | "trust" | "body";
+type FieldShelf = "profile" | "memory" | "time" | "diagnostics" | "trust" | "body" | "spectrum";
 
 const SHELF_TITLES: Record<FieldShelf, string> = {
   profile: "Your natal profile",
@@ -26,6 +27,7 @@ const SHELF_TITLES: Record<FieldShelf, string> = {
   diagnostics: "Synthetic diagnostics",
   trust: "Triangle of Trust",
   body: "Whole-body presence",
+  spectrum: "Twelve-House spectrum",
 };
 
 function formatMemoryTime(value: string): string {
@@ -230,6 +232,18 @@ export function QuincunxDashboard() {
             <strong>{Math.round(snapshot.body.overallCoherence * 100)}%</strong>
             <small>{activeFaces}/12 faces · {flowingEdges}/30 edges</small>
           </button>
+          <button
+            className="spectrum-shelf-trigger"
+            type="button"
+            data-active={activeShelf === "spectrum"}
+            aria-expanded={activeShelf === "spectrum"}
+            aria-controls="field-shelf-drawer"
+            onClick={() => setActiveShelf((current) => current === "spectrum" ? null : "spectrum")}
+          >
+            <span>06 / Spectrum</span>
+            <strong>XII</strong>
+            <small>color · light · sound</small>
+          </button>
         </nav>
 
         {activeShelf && (
@@ -314,6 +328,7 @@ export function QuincunxDashboard() {
                   </p>
                 </>
               )}
+              {activeShelf === "spectrum" && <HouseSpectrum />}
             </div>
           </aside>
         )}

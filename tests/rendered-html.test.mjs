@@ -17,8 +17,25 @@ test("builds the Dodecanic birth portal", async () => {
   assert.match(portalSource, /type="time"/);
   assert.match(portalSource, /City, region, country/);
   assert.match(portalSource, /window\.sessionStorage\.setItem/);
-  assert.match(portalSource, /window\.location\.assign\("\/quincunx"\)/);
+  assert.match(portalSource, /window\.location\.assign\("\/loading"\)/);
   assert.doesNotMatch(`${page}\n${portalSource}`, /ObserverConsole|codex-preview|react-loading-skeleton/);
+});
+
+test("moves a verified session through a dedicated origin loading sequence", async () => {
+  const [loadingPage, loadingSource, css] = await Promise.all([
+    readFile(new URL("app/loading/page.tsx", templateRoot), "utf8"),
+    readFile(new URL("components/BirthLoading.tsx", templateRoot), "utf8"),
+    readFile(new URL("app/globals.css", templateRoot), "utf8"),
+  ]);
+
+  assert.match(loadingPage, /<BirthLoading \/>/);
+  assert.match(loadingSource, /BIRTH_PROFILE_STORAGE_KEY/);
+  assert.match(loadingSource, /Opening the twelve-House spectrum/);
+  assert.match(loadingSource, /HOUSE_SPECTRUM_ORDER\.map/);
+  assert.match(loadingSource, /window\.location\.replace\("\/quincunx"\)/);
+  assert.match(loadingSource, /Verified natal placements appear only after the licensed astrology engine is connected/);
+  assert.match(css, /\.birth-loading/);
+  assert.match(css, /@keyframes loading-breathe/);
 });
 
 test("ships durable state and all eight observer currents", async () => {
@@ -162,9 +179,10 @@ test("updates the whole-body model from prompt input in real time", async () => 
   assert.doesNotMatch(livingSource, /HOUSE_RING_ORDER|ringFaces|interiorFaces/);
   assert.match(livingSource, /event\.code !== "Space"/);
   assert.match(livingSource, /onPointerDown=\{beginOrbit\}/);
-  assert.match(livingSource, /HOUSE_ROMAN: Record<HouseNumber, string>/);
+  assert.match(livingSource, /HOUSE_ROMAN, HOUSE_SPECTRUM/);
   assert.match(livingSource, /primaryLabel = `\$\{HOUSE_ROMAN\[point\.house\]\} · \$\{face\.house\.name\.toUpperCase\(\)\}`/);
-  assert.match(livingSource, /const wisdom = point\.house === 9/);
+  assert.match(livingSource, /const spectrum = HOUSE_SPECTRUM\[point\.house\]/);
+  assert.match(livingSource, /mixHouseColors/);
   assert.match(livingSource, /face\.house\.name\.toUpperCase\(\)/);
   assert.match(livingSource, /COLLAPSE/);
   assert.match(livingSource, /EXPANSE/);
@@ -210,10 +228,33 @@ test("places the user in a legible natal-profile field with safe data scaffoldin
   assert.match(migration, /enable row level security/);
   assert.match(migration, /auth\.uid\(\)/);
   assert.match(css, /url\("\/portal-cosmos\.png"\)/);
-  assert.match(css, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
 
   const subTenPixelType = [...css.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)]
     .map((match) => Number(match[1]))
     .filter((size) => size < 10);
   assert.deepEqual(subTenPixelType, [], "functional CSS type never drops below 10px");
+});
+
+test("uses one canonical twelve-House spectrum across the shelf, solid, and You profile", async () => {
+  const [spectrumSource, spectrumComponent, dashboardSource, livingSource, profileSource] = await Promise.all([
+    readFile(new URL("lib/house-spectrum.ts", templateRoot), "utf8"),
+    readFile(new URL("components/houses/HouseSpectrum.tsx", templateRoot), "utf8"),
+    readFile(new URL("components/quincunx/QuincunxDashboard.tsx", templateRoot), "utf8"),
+    readFile(new URL("components/dodecahedron/LivingDodecahedron.tsx", templateRoot), "utf8"),
+    readFile(new URL("components/quincunx/NatalProfilePanel.tsx", templateRoot), "utf8"),
+  ]);
+
+  const records = [...spectrumSource.matchAll(/^\s+\d+: \{ colorHex:/gm)];
+  assert.equal(records.length, 12, "the master spectrum defines exactly twelve House records");
+  for (const field of ["colorHex", "wavelengthNm", "lightFrequencyThz", "soundFrequencyHz", "geometry", "mode", "note"]) {
+    assert.match(spectrumSource, new RegExp(field));
+  }
+  assert.match(spectrumComponent, /Master correspondence system/);
+  assert.match(spectrumComponent, /not a literal sound-to-light conversion/);
+  assert.match(dashboardSource, /06 \/ Spectrum/);
+  assert.match(dashboardSource, /<HouseSpectrum \/>/);
+  assert.match(livingSource, /HOUSE_SPECTRUM\[selectedFace\.house\.number\]/);
+  assert.match(profileSource, /HOUSE_SPECTRUM_CONIC/);
+  assert.match(profileSource, /<HouseSpectrum variant="profile" \/>/);
 });

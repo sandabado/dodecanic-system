@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
 import type { BirthProfile } from "@/lib/birth-profile";
+import { HOUSE_SPECTRUM_CONIC, HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
 
 const BIG_THREE = ["Sun", "Moon", "Ascendant"] as const;
 const ANGLES = ["Descendant", "Midheaven", "Imum Coeli"] as const;
@@ -16,7 +18,11 @@ const PLANETS = [
   "Pluto",
 ] as const;
 const POINTS = ["North Node", "South Node", "Chiron", "Black Moon Lilith", "Part of Fortune"] as const;
-const HOUSES = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"] as const;
+type HouseWheelStyle = CSSProperties & {
+  "--house-index"?: number;
+  "--house-color"?: string;
+  "--house-spectrum"?: string;
+};
 
 function PendingValue({ label }: { label: string }) {
   return (
@@ -82,14 +88,19 @@ export function NatalProfilePanel({
       </div>
 
       <section className="natal-wheel-section" aria-label="Natal chart wheel awaiting calculation">
-        <div className="natal-wheel" data-state="pending">
+        <div
+          className="natal-wheel"
+          data-state="pending"
+          style={{ "--house-spectrum": HOUSE_SPECTRUM_CONIC } as HouseWheelStyle}
+        >
           <ol className="natal-wheel-houses" aria-label="Twelve natal houses">
-            {HOUSES.map((house, index) => (
+            {HOUSE_SPECTRUM_ORDER.map((house, index) => (
               <li
-                key={house}
-                style={{ "--house-index": index } as CSSProperties}
+                key={house.house}
+                style={{ "--house-index": index, "--house-color": house.colorHex } as HouseWheelStyle}
+                title={`House ${house.roman} · ${house.name} · ${house.colorName}`}
               >
-                {house}
+                {house.roman}
               </li>
             ))}
           </ol>
@@ -112,6 +123,8 @@ export function NatalProfilePanel({
           </ul>
         </div>
       </section>
+
+      <HouseSpectrum variant="profile" />
 
       <div className="natal-chart-grid">
         <article className="natal-card natal-card-big-three">
@@ -166,11 +179,11 @@ export function NatalProfilePanel({
             <small>Sign · exact degree</small>
           </header>
           <ol className="natal-house-list">
-            {HOUSES.map((house) => (
-              <li key={house}>
-                <span>{house}</span>
+            {HOUSE_SPECTRUM_ORDER.map((house) => (
+              <li key={house.house} style={{ "--house-color": house.colorHex } as HouseWheelStyle}>
+                <span>{house.roman} · {house.name}</span>
                 <strong>—</strong>
-                <small>cusp pending</small>
+                <small>{house.colorName} · cusp pending</small>
               </li>
             ))}
           </ol>
@@ -195,7 +208,7 @@ export function NatalProfilePanel({
           <ul className="natal-status-list">
             <li data-state={profile ? "ready" : "pending"}><span>Birth profile</span><strong>{inputStatus}</strong></li>
             <li data-state="pending"><span>Place + timezone</span><strong>Pending connection</strong></li>
-            <li data-state="pending"><span>Swiss Ephemeris</span><strong>Pending credentials</strong></li>
+            <li data-state="pending"><span>Swiss Ephemeris</span><strong>License + adapter pending</strong></li>
             <li data-state="pending"><span>Chart persistence</span><strong>Pending Supabase</strong></li>
           </ul>
         </article>

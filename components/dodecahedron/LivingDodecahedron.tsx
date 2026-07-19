@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import {
   DODECAHEDRON_EDGES,
   DODECAHEDRON_FACES,
@@ -10,6 +10,7 @@ import {
   type Point3,
 } from "@/lib/dodecahedron/topology";
 import type { BirthProfile } from "@/lib/birth-profile";
+import { hexToRgba, HOUSE_ROMAN, HOUSE_SPECTRUM, mixHouseColors } from "@/lib/house-spectrum";
 import type { ObserverSnapshot, CommunityTelemetry } from "@/lib/observer-telemetry";
 import type { DodecahedralEdgeState, HouseFaceState } from "@/lib/quincunx/whole-body";
 import type { HouseNumber } from "@/types/houses";
@@ -52,11 +53,6 @@ const COLORS = {
   CLOSE: "#ff5f57",
   IDLE: "#53605b",
 } as const;
-
-const HOUSE_ROMAN: Record<HouseNumber, string> = {
-  1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI",
-  7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII",
-};
 
 function rotatePoint([x, y, z]: Point3, angleY: number, angleX: number): Point3 {
   const cosY = Math.cos(angleY);
@@ -274,21 +270,26 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         .sort((faceA, faceB) => faceA.z - faceB.z)
         .forEach((point) => {
           const face = body.faces.find((item) => item.house.number === point.house)!;
+          const spectrum = HOUSE_SPECTRUM[point.house];
           const selected = selection.kind === "face" && selection.id === point.house;
           const frontFacing = point.facing > 0;
+          const breath = reduceMotion ? 0.5 : (Math.sin(time * 0.0015 + point.house * 0.7) + 1) / 2;
+          const energy = Math.max(face.coherence, face.active ? 0.7 : 0.18);
+          const faceAlpha = frontFacing
+            ? 0.1 + energy * 0.16 + breath * 0.045
+            : 0.018 + energy * 0.018;
           tracePolygon(context, point.points);
-          context.fillStyle = selected
-            ? "rgba(184, 255, 90, 0.23)"
-            : point.house === 9
-              ? frontFacing ? "rgba(255, 209, 102, 0.16)" : "rgba(255, 209, 102, 0.025)"
-              : frontFacing ? "rgba(8, 22, 18, 0.78)" : "rgba(8, 18, 16, 0.035)";
+          context.fillStyle = hexToRgba(spectrum.colorHex, selected ? 0.38 : faceAlpha);
           context.fill();
           if (selected) {
-            context.strokeStyle = COLORS[face.valve];
-            context.globalAlpha = 0.82;
+            context.strokeStyle = spectrum.colorHex;
+            context.shadowColor = spectrum.colorHex;
+            context.shadowBlur = 18;
+            context.globalAlpha = 0.96;
             context.lineWidth = 2.5;
             context.stroke();
             context.globalAlpha = 1;
+            context.shadowBlur = 0;
           }
         });
 
@@ -358,10 +359,16 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           const line = projectedEdgeMap.get(edge.id)!;
           const selected = selection.kind === "edge" && selection.id === edge.id;
           const frontEdge = line.z > -0.05;
+          const spectrumColor = mixHouseColors(
+            HOUSE_SPECTRUM[edge.houseA.number].colorHex,
+            HOUSE_SPECTRUM[edge.houseB.number].colorHex,
+          );
           context.beginPath();
           context.moveTo(line.from.x, line.from.y);
           context.lineTo(line.to.x, line.to.y);
-          context.strokeStyle = COLORS[edge.valve];
+          context.strokeStyle = spectrumColor;
+          context.shadowColor = selected ? COLORS[edge.valve] : spectrumColor;
+          context.shadowBlur = selected ? 14 : frontEdge && edge.flow > 0.55 ? 4 : 0;
           context.globalAlpha = selected
             ? 1
             : frontEdge
@@ -370,6 +377,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           context.lineWidth = selected ? 3.4 : frontEdge ? 0.9 + edge.flow * 1.55 : 0.65;
           context.setLineDash(edge.valve === "IDLE" ? [3, 7] : []);
           context.stroke();
+          context.shadowBlur = 0;
         });
       context.setLineDash([]);
       context.globalAlpha = 1;
@@ -378,8 +386,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         .sort((faceA, faceB) => faceA.z - faceB.z)
         .forEach((point) => {
           const face = body.faces.find((item) => item.house.number === point.house)!;
+          const spectrum = HOUSE_SPECTRUM[point.house];
           const selected = selection.kind === "face" && selection.id === point.house;
-          const wisdom = point.house === 9;
           if (point.facing <= 0.08 && !selected) return;
           const primaryLabel = `${HOUSE_ROMAN[point.house]} · ${face.house.name.toUpperCase()}`;
           const maximumLabelWidth = Math.max(72, point.radius * 1.85);
@@ -387,8 +395,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
 
           context.beginPath();
           context.arc(point.x, point.y, face.active ? 2.8 : 1.8, 0, Math.PI * 2);
-          context.fillStyle = wisdom ? "#ffd166" : COLORS[face.valve];
-          context.globalAlpha = face.active || selected || wisdom ? 1 : 0.66;
+          context.fillStyle = COLORS[face.valve];
+          context.globalAlpha = face.active || selected ? 1 : 0.7;
           context.fill();
           context.globalAlpha = 1;
 
@@ -400,11 +408,11 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           const labelWidth = context.measureText(primaryLabel).width;
           context.fillStyle = "rgba(2, 7, 5, 0.9)";
           context.fillRect(point.x - labelWidth / 2 - 6, point.y - 16, labelWidth + 12, 20);
-          context.fillStyle = selected ? "#ecffdb" : wisdom ? "#ffe7a3" : "#eef7f0";
+          context.fillStyle = "#f8fbf9";
           context.textAlign = "center";
           context.textBaseline = "middle";
           context.fillText(primaryLabel, point.x, point.y - 5);
-          context.fillStyle = selected ? "#caff82" : wisdom ? "#ffe08a" : "#d2dfd7";
+          context.fillStyle = selected ? spectrum.colorHex : hexToRgba(spectrum.colorHex, 0.92);
           context.font = "750 10px ui-monospace, SFMono-Regular, Menlo, monospace";
           context.fillText(`${face.house.current} · ${face.valve}`, point.x, point.y + 12);
         });
@@ -655,6 +663,7 @@ function ObserverInspector({
 
   if (!selectedFace) return null;
   const neighbors = getAdjacentHouses(selectedFace.house.number);
+  const spectrum = HOUSE_SPECTRUM[selectedFace.house.number];
   return (
     <aside className="observer-inspector" aria-live="polite">
       <p className="eyebrow">House {HOUSE_ROMAN[selectedFace.house.number]} / face</p>
@@ -663,9 +672,16 @@ function ObserverInspector({
         <strong>{formatPercent(selectedFace.coherence)}</strong>
         <span>{selectedFace.valve}</span>
       </div>
+      <div className="inspector-spectrum" style={{ "--house-color": spectrum.colorHex } as CSSProperties}>
+        <i aria-hidden="true" />
+        <span>{spectrum.colorName} · {spectrum.colorHex}</span>
+        <strong>{spectrum.cymaticMark} {spectrum.note}</strong>
+      </div>
       <dl>
         <div><dt>Role</dt><dd>{selectedFace.house.archetype}</dd></div>
         <div><dt>Body</dt><dd>{selectedFace.house.quincunxPrimary}</dd></div>
+        <div><dt>Resonance</dt><dd>{spectrum.soundFrequencyHz} Hz · {spectrum.mode}</dd></div>
+        <div><dt>Light</dt><dd>{spectrum.wavelengthNm} nm · {spectrum.lightFrequencyThz} THz</dd></div>
         <div><dt>Neighbors</dt><dd>{neighbors.map((house) => HOUSE_ROMAN[house]).join(" · ")}</dd></div>
       </dl>
       <p className="observer-reason">{selectedFace.reason}</p>
