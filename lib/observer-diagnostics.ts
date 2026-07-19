@@ -83,7 +83,9 @@ export function runObserverDiagnostics(): DiagnosticResult[] {
       valve: result.finalValve === diagnostic.expectedValve,
       faces: body.faces.length === 12 && new Set(body.faces.map((face) => face.house.number)).size === 12,
       edges: body.edges.length === 30 && DODECAHEDRON_EDGES.length === 30 && new Set(body.edges.map((edge) => edge.id)).size === 30,
-      pillars: body.pillars.length === 5,
+      pillars: body.pillars.length === 5
+        && body.pillars.some((pillar) => pillar.id === "aetheric")
+        && !body.pillars.some((pillar) => String(pillar.id) === "observer"),
       observer: body.quincunx.position9.active && body.quincunx.position9.bias === null,
     };
     return {

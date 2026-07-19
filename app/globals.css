@@ -818,19 +818,64 @@ kbd {
 }
 
 .pillar {
-  align-items: center;
   background: #111115;
   border-left: 2px solid #383640;
   display: grid;
-  gap: 11px;
-  grid-template-columns: 34px 1fr auto;
-  min-height: 50px;
-  padding: 7px 11px;
+  gap: 7px;
+  padding: 10px 11px 9px;
 }
 
 .pillar[data-status="stable"] { border-color: var(--acid); }
 .pillar[data-status="watch"] { border-color: var(--amber); }
 .pillar[data-status="critical"] { border-color: var(--coral); }
+
+.pillar-observer-strip {
+  align-items: center;
+  background: rgba(119, 98, 255, .08);
+  border: 1px solid rgba(119, 98, 255, .3);
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 27px 1fr auto;
+  margin-bottom: 9px;
+  padding: 8px 10px;
+}
+
+.pillar-observer-symbol {
+  color: var(--violet);
+  font-family: var(--serif);
+  font-size: 21px;
+  text-align: center;
+}
+
+.pillar-observer-strip span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.pillar-observer-strip strong {
+  color: var(--paper);
+  font-size: 10px;
+  font-weight: 560;
+}
+
+.pillar-observer-strip small,
+.pillar-observer-strip em {
+  color: #827f91;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-style: normal;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.pillar-observer-strip em { color: var(--violet); }
+
+.pillar-main {
+  align-items: center;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 34px 1fr auto;
+}
 
 .pillar-symbol {
   font-family: var(--serif);
@@ -838,7 +883,7 @@ kbd {
   text-align: center;
 }
 
-.pillar > span:nth-child(2) {
+.pillar-main > span:nth-child(2) {
   display: grid;
   gap: 3px;
 }
@@ -862,6 +907,50 @@ kbd {
   color: var(--paper);
   font-size: 13px;
 }
+
+.pillar-flow-track {
+  background: #27252d;
+  height: 4px;
+  position: relative;
+}
+
+.pillar-flow-track i {
+  background: var(--acid);
+  display: block;
+  height: 100%;
+  transition: width .2s ease;
+}
+
+.pillar[data-status="watch"] .pillar-flow-track i { background: var(--amber); }
+.pillar[data-status="critical"] .pillar-flow-track i { background: var(--coral); }
+
+.pillar-flow-track b {
+  background: var(--paper);
+  height: 8px;
+  opacity: .55;
+  position: absolute;
+  top: -2px;
+  width: 1px;
+}
+
+.pillar-telemetry {
+  color: #77747f;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 7px;
+  gap: 6px 13px;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.pillar-telemetry span:first-child {
+  color: var(--paper);
+  letter-spacing: .05em;
+}
+
+.pillar[data-direction="rising"] .pillar-telemetry span:first-child { color: var(--acid); }
+.pillar[data-direction="falling"] .pillar-telemetry span:first-child { color: var(--coral); }
 
 .trust-diagram {
   background:

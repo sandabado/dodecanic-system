@@ -101,6 +101,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
   const [rotating, setRotating] = useState(true);
   const [selection, setSelection] = useState<Selection>({ kind: "observer", id: "Ø" });
   const body = snapshot.body;
+  const aethericCoherence = body.pillars.find((pillar) => pillar.id === "aetheric")?.coherence ?? body.overallCoherence;
   const collapseCoherence = body.quincunx.corners.physical.coherence;
   const expanseCoherence = body.quincunx.corners.mental.coherence;
   const balanceDelta = collapseCoherence - expanseCoherence;
@@ -388,6 +389,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           <span><strong>{formatPercent(body.overallCoherence)}</strong> coherence</span>
           <span><strong>{body.edges.filter((edge) => edge.flow > 0).length}/30</strong> flowing</span>
           <span><strong>{body.faces.filter((face) => face.active).length}/12</strong> active</span>
+          <span><strong>{formatPercent(aethericCoherence)}</strong> aetheric</span>
           <span><strong>{Math.round(Math.abs(balanceDelta) * 100)}</strong> {balanceLabel}</span>
         </div>
         <button className="rotation-toggle" type="button" onClick={() => setRotating((value) => !value)}>

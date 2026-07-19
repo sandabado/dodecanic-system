@@ -13,6 +13,11 @@ function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function signedPercent(value: number): string {
+  const rounded = Math.round(value * 100);
+  return `${rounded > 0 ? "+" : ""}${rounded}%`;
+}
+
 export function WholeBodyMonitor({ result, compact = false }: WholeBodyMonitorProps) {
   const body = useMemo(() => calculateWholeBodyState(result), [result]);
   const flowingEdges = body.edges.filter((edge) => edge.flow > 0).length;
@@ -46,17 +51,32 @@ export function WholeBodyMonitor({ result, compact = false }: WholeBodyMonitorPr
         <article className="body-card pillars-card">
           <div className="body-card-heading">
             <span>05 pillars</span>
-            <span>Quincunx body</span>
+            <span>Ø witnesses the body</span>
+          </div>
+          <div className="pillar-observer-strip">
+            <span className="pillar-observer-symbol">Ø</span>
+            <span><strong>Observer online</strong><small>Position 9 witnesses five flows</small></span>
+            <em>IMPARTIAL</em>
           </div>
           <div className="pillar-list">
             {body.pillars.map((pillar) => (
-              <div className="pillar" data-status={pillar.status} key={pillar.id}>
-                <span className="pillar-symbol">{pillar.current}</span>
-                <span>
-                  <strong>{pillar.label}</strong>
-                  <small>{pillar.status}</small>
-                </span>
-                <em>{percent(pillar.coherence)}</em>
+              <div className="pillar" data-direction={pillar.direction} data-status={pillar.status} key={pillar.id}>
+                <div className="pillar-main">
+                  <span className="pillar-symbol">{pillar.current}</span>
+                  <span>
+                    <strong>{pillar.label}</strong>
+                    <small>{pillar.status} · {pillar.direction}</small>
+                  </span>
+                  <em>{percent(pillar.coherence)}</em>
+                </div>
+                <div className="pillar-flow-track" aria-label={`${pillar.label} coherence ${percent(pillar.coherence)}, baseline ${percent(pillar.baseline)}`}>
+                  <i style={{ width: `${pillar.coherence * 100}%` }} />
+                  <b style={{ left: `${pillar.baseline * 100}%` }} />
+                </div>
+                <div className="pillar-telemetry">
+                  <span>{pillar.direction} {signedPercent(pillar.delta)} from baseline</span>
+                  <span>{pillar.signals.join(" · ")}</span>
+                </div>
               </div>
             ))}
           </div>

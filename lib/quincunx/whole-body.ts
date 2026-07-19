@@ -31,10 +31,14 @@ export interface HouseFaceState {
 }
 
 export interface PillarState {
-  id: Corner | "observer";
+  id: Corner | "aetheric";
   label: string;
   current: string;
   coherence: number;
+  baseline: number;
+  delta: number;
+  direction: "rising" | "balanced" | "falling";
+  signals: string[];
   status: "stable" | "watch" | "critical";
 }
 
@@ -76,6 +80,34 @@ function statusFor(coherence: number): "stable" | "watch" | "critical" {
   if (coherence >= 0.7) return "stable";
   if (coherence >= 0.4) return "watch";
   return "critical";
+}
+
+function directionFor(delta: number): PillarState["direction"] {
+  if (delta >= 0.05) return "rising";
+  if (delta <= -0.05) return "falling";
+  return "balanced";
+}
+
+function pillarState(
+  id: PillarState["id"],
+  label: string,
+  current: string,
+  coherence: number,
+  signals: string[],
+): PillarState {
+  const baseline = 0.6;
+  const delta = coherence - baseline;
+  return {
+    id,
+    label,
+    current,
+    coherence,
+    baseline,
+    delta,
+    direction: directionFor(delta),
+    signals,
+    status: statusFor(coherence),
+  };
 }
 
 function toValve(valve: ValveState): ValveAction {
@@ -156,24 +188,54 @@ export function calculateWholeBodyState(result: CycleResult): WholeBodyState {
     coherence: triangleCoherence,
   };
 
-  const pillars: PillarState[] = [
-    ...(["physical", "mental", "emotional", "spiritual"] as Corner[]).map((corner) => ({
-      id: corner,
-      label: corner,
-      current: currentByCorner[corner],
-      coherence: scores[corner],
-      status: statusFor(scores[corner]),
-    })),
-    { id: "observer", label: "Position 9", current: "◉", coherence: observerCoherence, status: "stable" },
-  ];
+  const pillars: PillarState[] = (["physical", "mental", "emotional", "spiritual"] as Corner[]).map((corner) => {
+    const signals: Record<Corner, string[]> = {
+      physical: [
+        activeCurrents.has("V") ? "V intake" : "V intake quiet",
+        activeCurrents.has("∆") ? "∆ commitment" : "∆ commitment quiet",
+        activeCurrents.has("X") ? "X conflict load" : "No conflict load",
+      ],
+      mental: [
+        activeCurrents.has("∧") ? "∧ output" : "∧ output quiet",
+        activeCurrents.has("◇") ? "◇ review" : "◇ review quiet",
+        activeCurrents.has("∞") ? "∞ recursion" : "No recursion",
+        activeCurrents.has("X") ? "X contradiction" : "No contradiction",
+      ],
+      emotional: [
+        activeCurrents.has("W") ? "W oscillation" : "W oscillation quiet",
+        activeCurrents.has("◇") ? "◇ reflection" : "◇ reflection quiet",
+        activeCurrents.has("8") ? "8 completion" : "8 completion quiet",
+        activeCurrents.has("X") ? "X conflict" : "No conflict",
+      ],
+      spiritual: [
+        activeCurrents.has("8") ? "8 return" : "8 return quiet",
+        activeCurrents.has("◇") ? "◇ meaning" : "◇ meaning quiet",
+        activeCurrents.has("∞") ? "∞ recursive loop" : "No recursive loop",
+        activeCurrents.has("X") ? "X crossing" : "No crossing",
+      ],
+    };
+    return pillarState(corner, corner, currentByCorner[corner], scores[corner], signals[corner]);
+  });
+  const aethericCoherence = clamp(
+    quincunx.overallCoherence * 0.55
+      + triangle.coherence * 0.45
+      + (activeCurrents.has("8") ? 0.06 : 0)
+      + (activeCurrents.has("◇") ? 0.03 : 0)
+      - (result.finalValve === "CLOSE" ? 0.12 : result.finalValve === "MONITOR" ? 0.04 : 0),
+  );
+  pillars.push(pillarState("aetheric", "aetheric", "◯", aethericCoherence, [
+    `${activeCurrents.size} currents integrated`,
+    `Triangle Trust ${Math.round(triangle.coherence * 100)}%`,
+    `Valve ${result.finalValve}`,
+  ]));
 
   const flowingEdges = edges.filter((edge) => edge.flow > 0);
   const edgeCoherence = flowingEdges.length
     ? flowingEdges.reduce((sum, edge) => sum + (edge.valve === "CLOSE" ? 0.2 : edge.valve === "MONITOR" ? 0.55 : 1) * edge.flow, 0) / flowingEdges.length
     : quincunx.overallCoherence;
   const overallCoherence = Math.pow(
-    quincunx.overallCoherence * triangle.coherence * clamp(edgeCoherence),
-    1 / 3,
+    quincunx.overallCoherence * triangle.coherence * clamp(edgeCoherence) * aethericCoherence,
+    1 / 4,
   );
   const valve = edges.some((edge) => edge.flow === 1 && edge.valve === "CLOSE")
     ? "CLOSE"

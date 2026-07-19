@@ -91,8 +91,13 @@ test("models one dodecahedral body with twelve faces and thirty unique edges", a
   const houseNumbers = [...houseSource.matchAll(/^\s*(\d+): \{ number: \d+/gm)].map((match) => Number(match[1]));
   assert.deepEqual(houseNumbers, Array.from({ length: 12 }, (_, index) => index + 1));
   assert.match(bodySource, /resolveCurrentPair\(houseA\.current, houseB\.current\)/);
-  assert.match(bodySource, /id: "observer"/);
+  assert.match(bodySource, /pillarState\("aetheric"/);
+  assert.match(bodySource, /direction: directionFor\(delta\)/);
+  assert.match(bodySource, /signals: string\[\]/);
+  assert.doesNotMatch(bodySource, /id: "observer", label: "Position 9"/);
   assert.match(monitorSource, /body\.pillars\.map/);
+  assert.match(monitorSource, /pillar\.signals\.join/);
+  assert.match(monitorSource, /Observer online/);
   assert.match(monitorSource, /body\.faces\.map/);
   assert.match(monitorSource, /body\.edges\.map/);
   assert.match(monitorSource, /Triangle of Trust/);
