@@ -327,6 +327,25 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
         context.fillText(face.house.name.toUpperCase(), point.x, point.y + 10);
       });
 
+      // Keep the twelve house points explicit and countable even when a face
+      // label is visually dense or the geometry is rotating between frames.
+      displayFaces.forEach((point) => {
+        const angle = Math.atan2(point.y - centerY, point.x - centerX);
+        const markerRadius = point.radius + 5;
+        context.beginPath();
+        context.arc(
+          point.x + Math.cos(angle) * markerRadius,
+          point.y + Math.sin(angle) * markerRadius,
+          point.house === 9 ? 3.2 : 2.2,
+          0,
+          Math.PI * 2,
+        );
+        context.fillStyle = point.house === 9 ? "#ffd166" : "#b8ff5a";
+        context.globalAlpha = point.house === 9 ? 1 : 0.72;
+        context.fill();
+      });
+      context.globalAlpha = 1;
+
       const observerPulse = reduceMotion ? 10 : 10 + Math.sin(time * 0.0025) * 2;
       context.beginPath();
       context.arc(centerX, centerY, observerPulse, 0, Math.PI * 2);
@@ -389,6 +408,7 @@ export function LivingDodecahedron({ snapshot, community, connection }: LivingDo
           <span><strong>{formatPercent(body.overallCoherence)}</strong> coherence</span>
           <span><strong>{body.edges.filter((edge) => edge.flow > 0).length}/30</strong> flowing</span>
           <span><strong>{body.faces.filter((face) => face.active).length}/12</strong> active</span>
+          <span><strong>{body.faces.length}/12</strong> points</span>
           <span><strong>{formatPercent(aethericCoherence)}</strong> aetheric</span>
           <span><strong>{Math.round(Math.abs(balanceDelta) * 100)}</strong> {balanceLabel}</span>
         </div>
