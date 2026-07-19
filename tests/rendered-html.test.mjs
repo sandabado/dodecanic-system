@@ -104,7 +104,7 @@ test("models one dodecahedral body with twelve faces and thirty unique edges", a
 });
 
 test("updates the whole-body model from prompt input in real time", async () => {
-  const [dashboardSource, observerSource, pageSource, livingSource, telemetryRoute, telemetryHook, diagnosticsRoute, diagnosticsSource] = await Promise.all([
+  const [dashboardSource, observerSource, pageSource, livingSource, telemetryRoute, telemetryHook, diagnosticsRoute, diagnosticsSource, temporalSource, temporalComponent] = await Promise.all([
     readFile(new URL("components/quincunx/QuincunxDashboard.tsx", templateRoot), "utf8"),
     readFile(new URL("components/ObserverConsole.tsx", templateRoot), "utf8"),
     readFile(new URL("app/quincunx/page.tsx", templateRoot), "utf8"),
@@ -113,6 +113,8 @@ test("updates the whole-body model from prompt input in real time", async () => 
     readFile(new URL("hooks/useObserverTelemetry.ts", templateRoot), "utf8"),
     readFile(new URL("app/api/observer/diagnostics/route.ts", templateRoot), "utf8"),
     readFile(new URL("lib/observer-diagnostics.ts", templateRoot), "utf8"),
+    readFile(new URL("lib/observer-temporal.ts", templateRoot), "utf8"),
+    readFile(new URL("components/quincunx/TemporalObserver.tsx", templateRoot), "utf8"),
   ]);
 
   assert.match(dashboardSource, /runDodecanicCycle\(prompt\.trim\(\)/);
@@ -144,4 +146,9 @@ test("updates the whole-body model from prompt input in real time", async () => 
   assert.match(diagnosticsRoute, /bodyObserver: "Position 9"/);
   assert.match(diagnosticsSource, /body\.edges\.length === 30/);
   assert.match(diagnosticsSource, /body\.quincunx\.position9\.bias === null/);
+  assert.match(temporalSource, /TRIANGLE_TARGET/);
+  assert.match(temporalSource, /calculateTemporalBalance/);
+  assert.match(temporalComponent, /Past · Present · Future/);
+  assert.match(temporalComponent, /observerLoop/);
+  assert.match(dashboardSource, /<TemporalObserver result=\{snapshot\.result\}/);
 });

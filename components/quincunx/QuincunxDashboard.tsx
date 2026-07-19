@@ -6,6 +6,7 @@ import { useObserverTelemetry } from "@/hooks/useObserverTelemetry";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
 import type { CycleResult } from "@/lib/types";
 import { ObserverDiagnostics } from "./ObserverDiagnostics";
+import { TemporalObserver } from "./TemporalObserver";
 import { WholeBodyMonitor } from "./WholeBodyMonitor";
 
 const INITIAL_PROMPT = "Review the previous plan, but verify every conflict before we finalize the agreement.";
@@ -135,6 +136,8 @@ export function QuincunxDashboard() {
           <span><strong>{telemetry.community.closedCycles}</strong> close</span>
         </div>
       </section>
+
+      <TemporalObserver result={snapshot.result} history={telemetry.history} />
 
       <ObserverDiagnostics
         onLoadPrompt={(diagnosticPrompt) => {

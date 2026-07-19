@@ -26,7 +26,7 @@ export function useObserverTelemetry(liveResult: CycleResult) {
 
   const refetch = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await fetch("/api/observer/telemetry?limit=24", {
+      const response = await fetch("/api/observer/telemetry?limit=50", {
         cache: "no-store",
         signal,
       });
