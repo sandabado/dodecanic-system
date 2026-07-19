@@ -40,6 +40,43 @@ a:focus-visible {
   color: white;
 }
 
+.data-provenance {
+  --provenance-color: #a9a5af;
+  align-items: center;
+  background: color-mix(in srgb, var(--provenance-color) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--provenance-color) 34%, transparent);
+  border-radius: 999px;
+  color: var(--provenance-color);
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  gap: 6px;
+  letter-spacing: .06em;
+  line-height: 1;
+  padding: 6px 8px;
+  text-transform: uppercase;
+  width: max-content;
+}
+
+.data-provenance i {
+  background: currentColor;
+  border-radius: 50%;
+  height: 5px;
+  width: 5px;
+}
+
+.data-provenance[data-kind="supplied"] { --provenance-color: var(--color-supplied); }
+.data-provenance[data-kind="verified"] { --provenance-color: var(--acid); }
+.data-provenance[data-kind="modeled"] { --provenance-color: var(--color-modeled); }
+.data-provenance[data-kind="symbolic"] { --provenance-color: var(--color-symbolic); }
+.data-provenance[data-kind="pending"] { --provenance-color: var(--amber); }
+.data-provenance[data-kind="session"] { --provenance-color: var(--color-session); }
+.data-provenance[data-kind="read-only"] { --provenance-color: #b6b2bd; }
+.data-provenance[data-kind="unavailable"] { --provenance-color: var(--coral); }
+.data-provenance.is-compact { font-size: 10px; gap: 4px; padding: 4px 6px; }
+
 .app-shell {
   margin: 0 auto;
   max-width: 1680px;
@@ -353,10 +390,10 @@ a:focus-visible {
 
 .quincunx-domain[data-status="watch"] { border-left-color: var(--amber); }
 .quincunx-domain[data-status="critical"] { border-left-color: var(--coral); }
-.quincunx-domain-physical { left: 5%; top: 13%; }
-.quincunx-domain-mental { right: 5%; top: 13%; }
-.quincunx-domain-emotional { bottom: 13%; left: 5%; }
-.quincunx-domain-spiritual { bottom: 13%; right: 5%; }
+.quincunx-domain-physical { bottom: 5%; left: 50%; transform: translateX(-50%); }
+.quincunx-domain-mental { left: 50%; top: 5%; transform: translateX(-50%); }
+.quincunx-domain-emotional { left: 3%; top: 50%; transform: translateY(-50%); }
+.quincunx-domain-spiritual { right: 3%; top: 50%; transform: translateY(-50%); }
 
 .quincunx-domain-current {
   color: var(--paper);
@@ -499,9 +536,9 @@ a:focus-visible {
   .quincunx-aether-field { inset: 20px 12px; }
   .quincunx-domain { min-width: 0; padding: 11px; width: 43%; }
   .quincunx-domain-physical,
-  .quincunx-domain-emotional { left: 3%; }
-  .quincunx-domain-mental,
-  .quincunx-domain-spiritual { right: 3%; }
+  .quincunx-domain-mental { width: 43%; }
+  .quincunx-domain-emotional,
+  .quincunx-domain-spiritual { width: 35%; }
   .quincunx-domain-current { font-size: 25px; }
   .quincunx-domain-name strong { font-size: 13px; }
   .quincunx-domain > em { font-size: 15px; }
@@ -827,8 +864,22 @@ a:focus-visible {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 168px;
+  width: 214px;
   z-index: 2;
+}
+
+.vortex-axis-label {
+  background: rgba(20, 14, 31, 0.88);
+  border: 1px solid rgba(182, 169, 255, 0.36);
+  color: #c8bcff;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1;
+  margin-bottom: 4px;
+  padding: 5px 7px;
+  text-transform: uppercase;
 }
 
 .human-anchor-label,
@@ -1524,14 +1575,25 @@ a:focus-visible {
 }
 
 .field-shelf-rail small {
+  align-items: center;
   color: #b8c6be;
+  display: flex;
   font-size: 11px;
   font-weight: 650;
+  gap: 6px;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.field-shelf-rail small > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.field-shelf-rail .data-provenance { flex: 0 0 auto; }
 
 .field-shelf-rail .profile-shelf-trigger {
   background:
@@ -2635,7 +2697,7 @@ a:focus-visible {
   .escapement-decision { align-items: start; grid-template-columns: 1fr; }
   .nav-prompt-meta span { max-width: 68%; }
   .orbit-hint span { display: none; }
-  .human-anchor { top: 43%; width: 142px; }
+  .human-anchor { top: 43%; width: 190px; }
   .human-orbit { height: 92px; width: 92px; }
   .human-orbit::before { inset: 14px; }
   .human-orbit::after { inset: 6px; }

@@ -5,8 +5,9 @@
 1. **The field is primary.** Chrome and supporting panels recede behind the
    dodecahedron.
 2. **One accent has one meaning.** Green is live/open, amber is pending/watch,
-   and coral is stop/close. House colors identify Houses; they do not replace
-   system status.
+   and coral is stop/close. Supplied, modeled, symbolic, and session-only layers
+   use their provenance colors. House colors identify Houses; they do not
+   replace system status.
 3. **Typography carries hierarchy.** Serif type names concepts, mono type shows
    coordinates and telemetry, and sans-serif type explains.
 4. **No ornamental component without information.** Motion expresses state or
@@ -20,6 +21,8 @@ Canonical tokens live in `app/design-system.css`.
 - Surfaces: `--color-canvas`, `--color-surface`, `--color-surface-raised`
 - Content: `--color-text`, `--color-text-muted`, `--color-text-dim`
 - State: `--color-live`, `--color-watch`, `--color-stop`
+- Provenance: `--color-supplied`, `--color-modeled`, `--color-symbolic`,
+  `--color-session`
 - Brand: `--color-primary`, `--color-primary-bright`
 - Type: `--font-sans`, `--font-mono`, `--font-serif`
 - Rhythm: `--space-1` through `--space-8`

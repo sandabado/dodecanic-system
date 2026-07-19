@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
 import type { BirthProfile } from "@/lib/birth-profile";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import { HOUSE_SPECTRUM_CONIC, HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
 
 type HouseWheelStyle = CSSProperties & {
@@ -21,6 +23,7 @@ export function NatalProfilePanel({
       <header className="natal-profile-hero">
         <div>
           <p className="eyebrow">You / fixed origin</p>
+          <DataProvenanceBadge status={profile ? DATA_PROVENANCE.originSupplied : DATA_PROVENANCE.originPending} />
           <h2>You are inside the machine.</h2>
           <p>
             Your verified birth chart will become the permanent blueprint. The exact sky at each visit becomes the moving layer read against it.

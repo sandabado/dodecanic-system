@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { LivingDodecahedron } from "@/components/dodecahedron/LivingDodecahedron";
 import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
 import { CurrentSkyPanel } from "@/components/CurrentSkyPanel";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useObserverTelemetry } from "@/hooks/useObserverTelemetry";
 import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import type { CycleResult } from "@/lib/types";
 import { NatalProfilePanel } from "./NatalProfilePanel";
 import { TriangleOfTrust } from "./TriangleOfTrust";
@@ -166,7 +168,7 @@ export function QuincunxDashboard() {
           >
             <span>00 / You</span>
             <strong>YOU</strong>
-            <small>{birthProfile ? birthProfile.birthPlace : "add birth profile"}</small>
+            <small><DataProvenanceBadge compact status={birthProfile ? DATA_PROVENANCE.originSupplied : DATA_PROVENANCE.originPending} /><span>{birthProfile ? birthProfile.birthPlace : "add birth profile"}</span></small>
           </button>
           <button
             type="button"
@@ -177,7 +179,7 @@ export function QuincunxDashboard() {
           >
             <span>01 / Now</span>
             <strong>UTC</strong>
-            <small>live moment · chart layer</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.currentSkyPending} /><span>live clock</span></small>
           </button>
           <button
             type="button"
@@ -188,7 +190,7 @@ export function QuincunxDashboard() {
           >
             <span>02 / Field</span>
             <strong>{Math.round(snapshot.body.overallCoherence * 100)}%</strong>
-            <small>{activeFaces}/12 faces · {flowingEdges}/30 edges</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.fieldModeled} /><span>{activeFaces}/12 · {flowingEdges}/30</span></small>
           </button>
           <button
             type="button"
@@ -199,7 +201,7 @@ export function QuincunxDashboard() {
           >
             <span>03 / Session</span>
             <strong>{telemetry.community.observedCycles}</strong>
-            <small>{replayIndex === null ? "session field" : `memory ${replayIndex + 1}`}</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.sessionOnly} /><span>{replayIndex === null ? "current field" : `memory ${replayIndex + 1}`}</span></small>
           </button>
           <button
             className="spectrum-shelf-trigger"
@@ -211,7 +213,7 @@ export function QuincunxDashboard() {
           >
             <span>04 / Houses</span>
             <strong>XII</strong>
-            <small>color · light · sound</small>
+            <small><DataProvenanceBadge compact status={DATA_PROVENANCE.housesSymbolic} /><span>color · light · sound</span></small>
           </button>
         </nav>
 
@@ -276,7 +278,7 @@ export function QuincunxDashboard() {
                     <span>{snapshot.source === "live" ? "Updates with every character" : `${formatMemoryTime(snapshot.result.createdAt)} UTC`}</span>
                     <p>“{snapshot.result.inputText}”</p>
                   </div>
-                  <div className="telemetry-summary" aria-label="Observed community cycle summary">
+                  <div className="telemetry-summary" aria-label="Current session cycle summary">
                     <span><strong>{telemetry.community.observedCycles}</strong> observed</span>
                     <span><strong>{telemetry.community.openCycles}</strong> open</span>
                     <span><strong>{telemetry.community.monitorCycles}</strong> monitor</span>

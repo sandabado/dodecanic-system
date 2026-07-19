@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import { HOUSE_SPECTRUM, HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
 import type { HouseNumber } from "@/types/houses";
 
@@ -15,6 +17,7 @@ export function HouseSpectrum({ variant = "full" }: { variant?: "full" | "profil
       <header className="house-spectrum-header">
         <div>
           <p className="eyebrow">Master correspondence system</p>
+          <DataProvenanceBadge status={DATA_PROVENANCE.housesSymbolic} />
           <h2>{variant === "profile" ? "Your twelve House frequencies" : "The spectrum of the twelve Houses"}</h2>
         </div>
         <p>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import type { BirthProfile } from "@/lib/birth-profile";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 
 function formatUtc(iso: string): string {
   if (!iso) return "Synchronizing…";
@@ -40,7 +42,7 @@ export function CurrentSkyPanel({ profile }: { profile: BirthProfile | null }) {
           <p className="eyebrow">Moving layer / exact moment</p>
           <h2>The sky now</h2>
         </div>
-        <span className="current-sky-status" data-state="pending">Engine pending</span>
+        <DataProvenanceBadge status={DATA_PROVENANCE.currentSkyPending} />
       </header>
 
       <div className="current-time-grid">

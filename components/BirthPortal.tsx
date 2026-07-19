@@ -69,7 +69,7 @@ export function BirthPortal() {
           <p className="eyebrow">Entry coordinates / private session</p>
           <h1>Enter the<br /><em>living field.</em></h1>
           <p>
-            Give the observer one origin point. These birth details travel with
+            Give the field one origin point. These birth details travel with
             you in this browser session while you explore the dodecahedral field.
           </p>
           <div className="portal-sequence" aria-hidden="true">

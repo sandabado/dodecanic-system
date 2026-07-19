@@ -103,9 +103,10 @@ test("models one dodecahedron with twelve faces and thirty unique edges", async 
   assert.match(body, /resolveCurrentPair\(houseA\.current, houseB\.current\)/);
   assert.match(monitor, /<QuincunxPresence/);
   assert.doesNotMatch(monitor, /body\.faces\.map|body\.edges\.map/);
-  assert.match(presence, /Position 9 observer/);
+  assert.match(presence, /Position 9 system observer/);
+  for (const glyph of ["🜁", "🜂", "🜄", "🜃", "Ø"]) assert.match(presence, new RegExp(glyph));
   assert.match(trust, /Master sets direction/);
-  assert.match(trust, /Read-only modeled instrument/);
+  assert.match(trust, /read-only modeled instrument/i);
 });
 
 test("keeps the interactive solid as the primary field surface", async () => {
@@ -130,6 +131,10 @@ test("keeps the interactive solid as the primary field surface", async () => {
   assert.match(living, /rotatePoint\(direction\.coordinates, angleY, angleX\)/);
   assert.match(living, /QUINCUNX_DOMAINS\.map/);
   assert.match(living, /body\.quincunx\.corners\[point\.id\]\.coherence/);
+  assert.match(living, /vortexPoints/);
+  assert.match(living, /POSITION 9 \/ SYSTEM AXIS \/ THE TURN/);
+  assert.match(living, /SESSION MEMORY LIVE/);
+  assert.doesNotMatch(living, /D1 MEMORY LIVE|human observer/);
   for (const domain of ["PHYSICAL", "MENTAL", "EMOTIONAL", "SPIRITUAL"]) assert.match(living, new RegExp(domain));
   assert.match(living, /useState<Selection>\(\{ kind: "observer", id: "Ø" \}\)/);
   assert.match(living, /YOU \/ HUMAN CENTER/);
@@ -142,6 +147,31 @@ test("keeps the interactive solid as the primary field surface", async () => {
   assert.doesNotMatch(escapement, /supabase|createClient|collectTriangleVotes/);
   assert.match(telemetryRoute, /listCycles\(limit\)/);
   assert.match(telemetryHook, /setInterval\(\(\) => void refetch\(\), 12_000\)/);
+});
+
+test("codifies one honest semantic and provenance contract", async () => {
+  const [semantic, provenance, houses, dashboard] = await Promise.all([
+    source("docs/SEMANTIC_CONTRACT.md"),
+    source("lib/data-provenance.ts"),
+    source("types/houses.ts"),
+    source("components/quincunx/QuincunxDashboard.tsx"),
+  ]);
+
+  assert.match(semantic, /YOU \/ Ethereal center/);
+  assert.match(semantic, /Position 9 \/ the Observer/);
+  assert.match(semantic, /North \| Air \| 🜁/);
+  assert.match(semantic, /South \| Earth \| 🜃/);
+  assert.match(semantic, /West \| Water \| 🜄/);
+  assert.match(semantic, /East \| Fire \| 🜂/);
+  assert.match(semantic, /does not currently persist vortex\s+state/);
+  assert.match(semantic, /Prohibited claims/);
+  for (const status of ["originSupplied", "natalPending", "currentSkyPending", "fieldModeled", "sessionOnly", "triangleReadOnly", "housesSymbolic", "communityUnavailable"]) {
+    assert.match(provenance, new RegExp(status));
+  }
+  for (const field of ["humanMeaning", "activatesWhen", "imbalance", "reflection", "question"]) {
+    assert.match(houses, new RegExp(field));
+  }
+  assert.equal([...dashboard.matchAll(/<DataProvenanceBadge compact/g)].length, 5);
 });
 
 test("separates fixed natal, current sky, and Dodecanic meaning", async () => {

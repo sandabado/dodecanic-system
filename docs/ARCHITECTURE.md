@@ -10,8 +10,8 @@ Origin portal
     → Living field
        ├─ YOU      fixed birth origin and natal blueprint
        ├─ NOW      exact current moment and moving-sky layer
-       ├─ FIELD    Quincunx presence and Triangle of Trust
-       ├─ SESSION  prompt reflections from the current server session
+       ├─ FIELD    Quincunx whole-body presence
+       ├─ SESSION  prompt reflections and read-only Triangle of Trust
        └─ HOUSES   canonical twelve-House correspondence system
 ```
 
@@ -21,10 +21,13 @@ primary surface.
 
 ## Truth model
 
-The application separates verified data from interpretive data.
+The application separates supplied data, verified calculations, authored
+symbolism, and modeled interpretation.
 
-- **Verified origin:** birth input after geocoding and historical timezone
-  resolution.
+- **Supplied origin:** birth text shown exactly as entered in the current
+  browser session.
+- **Verified origin:** supplied birth text after geocoding and historical
+  timezone resolution.
 - **Verified natal:** planetary positions, angles, Houses, and aspects returned
   by a licensed ephemeris provider.
 - **Verified now:** current UTC plus current planetary positions.
@@ -35,6 +38,9 @@ The application separates verified data from interpretive data.
 
 Until a layer is connected, the UI reports it as pending and never supplies a
 fabricated placement.
+
+`docs/SEMANTIC_CONTRACT.md` is authoritative for the human/system distinction,
+Whole Body orientation, House meanings, provenance labels, and claim boundaries.
 
 ## Code boundaries
 

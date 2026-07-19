@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
+import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import type { TriangleTrustState } from "@/lib/quincunx/whole-body";
 import { modelTriangleEscapement } from "@/lib/triangle-escapement";
 import type { CycleResult } from "@/lib/types";
@@ -21,7 +23,7 @@ export function TriangleOfTrust({
     `Master impulse ${percent(triangle.master.coherence)}.`,
     `Mirror restoring feedback ${percent(triangle.mirror.coherence)}.`,
     `Root timing gate ${percent(triangle.root.coherence)}.`,
-    `Position 9 human observer witnesses the model.`,
+    `Position 9 system observer witnesses the model.`,
   ].join(" ");
   const clockStyle = {
     "--clock-energy": `${Math.round(escapement.inputPressure * 100)}%`,
@@ -32,7 +34,7 @@ export function TriangleOfTrust({
     <article className="body-card trust-card is-standalone" data-gate={escapement.gate}>
       <div className="body-card-heading">
         <span>Triangle of Trust / social escapement</span>
-        <span>Read-only modeled instrument</span>
+        <DataProvenanceBadge compact status={DATA_PROVENANCE.triangleReadOnly} />
       </div>
 
       <div className="escapement-layout">
@@ -47,7 +49,7 @@ export function TriangleOfTrust({
           <span className="clock-role clock-master">MASTER <b>Impulse</b></span>
           <span className="clock-role clock-mirror">MIRROR <b>Restore</b></span>
           <span className="clock-role clock-root">ROOT <b>Gate</b></span>
-          <small>HUMAN WITNESS / POSITION 9</small>
+          <small>POSITION 9 / SYSTEM WITNESS</small>
         </div>
 
         <div className="escapement-readout">
@@ -77,7 +79,7 @@ export function TriangleOfTrust({
         <p>{escapement.reason}</p>
       </div>
       <p className="trust-explanation">
-        Master sets direction. Mirror tests deviation. Root controls timing. Ø—the human—remains the final witness. This instrument reflects submitted language; it does not authorize actions or claim physical prediction.
+        Master sets direction. Mirror tests deviation. Root controls timing. Position 9 is the system witness; the human retains authority to accept or reject its reflection. This instrument does not authorize actions or claim physical prediction.
       </p>
     </article>
   );

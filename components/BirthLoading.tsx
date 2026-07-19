@@ -8,7 +8,7 @@ import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/
 const STAGES = [
   "Receiving your origin coordinates",
   "Opening the twelve-House spectrum",
-  "Placing YOU at the observer center",
+  "Placing YOU at the Ethereal center",
 ] as const;
 
 type OrbitStyle = CSSProperties & {

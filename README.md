@@ -12,6 +12,9 @@ not yet connected. The interface never invents natal placements while those
 services are unavailable. Observer cycles currently persist only for the
 lifetime of a warm server process.
 
+Product meaning and data-claim boundaries are defined in
+[`docs/SEMANTIC_CONTRACT.md`](docs/SEMANTIC_CONTRACT.md).
+
 ## Product map
 
 - `/` — birth-origin portal
