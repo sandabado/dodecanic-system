@@ -7,7 +7,7 @@ import { CurrentSkyPanel } from "@/components/CurrentSkyPanel";
 import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useObserverTelemetry } from "@/hooks/useObserverTelemetry";
-import { BIRTH_PROFILE_STORAGE_KEY, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
+import { BIRTH_PROFILE_STORAGE_KEY, formatBirthTime, isBirthProfile, type BirthProfile } from "@/lib/birth-profile";
 import { runDodecanicCycle } from "@/lib/dodecanic-observer";
 import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import type { CycleResult } from "@/lib/types";
@@ -146,7 +146,7 @@ export function QuincunxDashboard() {
         <div className="field-identity" role="status" aria-live="polite" aria-atomic="true">
           <span>{birthProfile ? "You / natal anchor / current session" : "You / profile pending"}</span>
           <strong>{birthProfile
-            ? `${birthProfile.birthDate} · ${birthProfile.birthTime} · ${birthProfile.birthPlace}`
+            ? `${birthProfile.birthDate} · ${formatBirthTime(birthProfile)} · ${birthProfile.birthPlace}`
             : "The Dodecahedron is the field of creation. Add birth coordinates to place yourself inside it."}</strong>
         </div>
         <LivingDodecahedron

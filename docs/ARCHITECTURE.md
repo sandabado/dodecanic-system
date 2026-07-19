@@ -39,8 +39,9 @@ symbolism, and modeled interpretation.
 Until a layer is connected, the UI reports it as pending and never supplies a
 fabricated placement.
 
-`docs/SEMANTIC_CONTRACT.md` is authoritative for the human/system distinction,
-Whole Body orientation, House meanings, provenance labels, and claim boundaries.
+`docs/DODECANIC_CONSTITUTION.md` is the ratified semantic authority.
+`docs/SEMANTIC_CONTRACT.md` is authoritative for current implementation truth,
+the human/system distinction, provenance labels, and claim boundaries.
 
 ## Code boundaries
 
@@ -77,9 +78,15 @@ birth input
   → natal calculation
   → current UTC calculation
   → transit-to-natal aspects
+  → ratified sign-to-Dodecanic-House map
   → House activation
   → Dodecanic reading
 ```
 
 Swiss Ephemeris must use either a Professional license or an AGPL-compatible
 application license before the public calculation service is activated.
+
+The canonical v1 calculation target is tropical / Whole Sign with major
+aspects only. Unknown birth time uses disclosed solar-chart mode without ASC,
+MC, or cusp-derived Houses. No activation code may infer the unresolved
+sign-to-Dodecanic-House map.

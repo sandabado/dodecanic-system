@@ -1,9 +1,10 @@
 # Dodecanic
 
-Dodecanic places a person at the center of a twelve-House living field. The
-product is organized around three layers:
+Dodecanic places a person at the center of a Sphere containing a twelve-House
+dodecahedral lattice and modeled toroidal flow. The product is organized around
+three information layers:
 
-1. **Origin** — verified birth date, exact time, and place.
+1. **Origin** — supplied birth date, time status, and place.
 2. **Now** — the exact current moment and, once licensed, the current sky.
 3. **Field** — the Dodecanic House, color, current, and observer model.
 
@@ -12,7 +13,9 @@ not yet connected. The interface never invents natal placements while those
 services are unavailable. Observer cycles currently persist only for the
 lifetime of a warm server process.
 
-Product meaning and data-claim boundaries are defined in
+Product meaning is ratified in
+[`docs/DODECANIC_CONSTITUTION.md`](docs/DODECANIC_CONSTITUTION.md). Current
+data-claim boundaries are defined in
 [`docs/SEMANTIC_CONTRACT.md`](docs/SEMANTIC_CONTRACT.md).
 
 ## Product map

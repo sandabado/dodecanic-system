@@ -1,5 +1,6 @@
 import {
   CHART_ANGLE_IDS,
+  DODECANIC_ASTROLOGY_STANDARD,
   HOUSE_SYSTEMS,
   NATAL_ASPECT_KINDS,
   NATAL_CHART_SCHEMA_VERSION,
@@ -9,7 +10,7 @@ import {
   type HouseCusp,
   type NatalAspect,
   type NatalChartData,
-  type NatalChartDataV1,
+  type NatalChartDataV2,
   type NatalChartEngineMetadata,
   type NatalChartRequest,
   type NatalPlanetPosition,
@@ -97,8 +98,15 @@ function isResolvedBirthInput(value: unknown): value is ResolvedBirthInput {
   if (!isRecord(value) || !isRecord(value.place)) return false;
 
   const place = value.place;
-  return isIsoDate(value.localDate)
+  const hasValidTimeMode = (value.birthTimeMode === "exact"
     && isLocalTime(value.localTime)
+    && value.calculationLocalTime === value.localTime)
+    || (value.birthTimeMode === "solar_chart"
+      && value.localTime === null
+      && value.calculationLocalTime === DODECANIC_ASTROLOGY_STANDARD.solarChartReferenceTime);
+  return isIsoDate(value.localDate)
+    && hasValidTimeMode
+    && isLocalTime(value.calculationLocalTime)
     && isIsoDateTime(value.utcDateTime)
     && Number.isInteger(value.utcOffsetMinutes)
     && isFiniteNumber(value.utcOffsetMinutes)
@@ -124,7 +132,7 @@ function isNatalPlanetPosition(value: unknown): value is NatalPlanetPosition {
     && isNumberWithin(value.latitude, -90, 90)
     && isFiniteNumber(value.longitudeSpeed)
     && typeof value.retrograde === "boolean"
-    && isOneOf(value.house, HOUSE_NUMBERS);
+    && (value.house === null || isOneOf(value.house, HOUSE_NUMBERS));
 }
 
 function isHouseCusp(value: unknown): value is HouseCusp {
@@ -161,11 +169,10 @@ function isEngineMetadata(value: unknown): value is NatalChartEngineMetadata {
     && isNonEmptyString(value.engineName)
     && isNonEmptyString(value.engineVersion)
     && isNullableString(value.ephemerisVersion)
+    && value.houseSystem === DODECANIC_ASTROLOGY_STANDARD.houseSystem
     && isOneOf(value.houseSystem, HOUSE_SYSTEMS)
-    && (value.zodiac === "tropical" || value.zodiac === "sidereal")
-    && isNullableString(value.ayanamsha)
-    && ((value.zodiac === "tropical" && value.ayanamsha === null)
-      || (value.zodiac === "sidereal" && isNonEmptyString(value.ayanamsha)))
+    && value.zodiac === DODECANIC_ASTROLOGY_STANDARD.zodiac
+    && value.ayanamsha === null
     && isIsoDateTime(value.generatedAt);
 }
 
@@ -173,7 +180,7 @@ function hasUniqueValues<T>(values: readonly T[]): boolean {
   return new Set(values).size === values.length;
 }
 
-export function isNatalChartDataV1(value: unknown): value is NatalChartDataV1 {
+export function isNatalChartDataV2(value: unknown): value is NatalChartDataV2 {
   if (!isRecord(value)
     || value.schemaVersion !== NATAL_CHART_SCHEMA_VERSION
     || !isResolvedBirthInput(value.input)
@@ -189,20 +196,22 @@ export function isNatalChartDataV1(value: unknown): value is NatalChartDataV1 {
   const planets = value.planets;
   const cusps = value.cusps;
   const angles = value.angles;
+  const exactTime = value.input.birthTimeMode === "exact";
 
   return planets.every(isNatalPlanetPosition)
     && hasUniqueValues(planets.map((planet) => planet.planet))
-    && cusps.length === 12
+    && (exactTime ? planets.every((planet) => planet.house !== null) : planets.every((planet) => planet.house === null))
+    && cusps.length === (exactTime ? 12 : 0)
     && cusps.every(isHouseCusp)
     && hasUniqueValues(cusps.map((cusp) => cusp.house))
-    && angles.length === CHART_ANGLE_IDS.length
+    && angles.length === (exactTime ? CHART_ANGLE_IDS.length : 0)
     && angles.every(isChartAngle)
     && hasUniqueValues(angles.map((angle) => angle.angle))
     && value.aspects.every(isNatalAspect);
 }
 
 export function isNatalChartProviderResponse(value: unknown): value is NatalChartData {
-  return isNatalChartDataV1(value);
+  return isNatalChartDataV2(value);
 }
 
 export function parseNatalChartProviderResponse(value: unknown): NatalChartData {

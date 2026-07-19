@@ -6,17 +6,20 @@ const root = new URL("../", import.meta.url);
 const source = (path) => readFile(new URL(path, root), "utf8");
 
 test("builds the three-step origin journey", async () => {
-  const [home, portal, loadingPage, loading] = await Promise.all([
+  const [home, portal, loadingPage, loading, birthProfile] = await Promise.all([
     source("app/page.tsx"),
     source("components/BirthPortal.tsx"),
     source("app/loading/page.tsx"),
     source("components/BirthLoading.tsx"),
+    source("lib/birth-profile.ts"),
     access(new URL(".next/BUILD_ID", root)),
   ]);
 
   assert.match(home, /<BirthPortal \/>/);
   assert.match(portal, /type="date"/);
   assert.match(portal, /type="time"/);
+  assert.match(portal, /I don’t know my birth time/);
+  assert.match(portal, /birthTimeKnown/);
   assert.match(portal, /City, region, country/);
   assert.match(portal, /sessionStorage\.setItem/);
   assert.match(portal, /location\.assign\("\/loading"\)/);
@@ -24,6 +27,7 @@ test("builds the three-step origin journey", async () => {
   assert.match(loading, /HOUSE_SPECTRUM_ORDER\.map/);
   assert.match(loading, /location\.replace\("\/quincunx"\)/);
   assert.match(loading, /Verified natal placements appear only after the licensed astrology engine is connected/);
+  assert.match(birthProfile, /Unknown · solar chart mode/);
 });
 
 test("keeps one lean product architecture and design system", async () => {
@@ -98,7 +102,29 @@ test("models one dodecahedron with twelve faces and thirty unique edges", async 
   }
   for (const connections of degree.values()) assert.equal(connections, 5);
 
+  const distancesFrom = (origin) => {
+    const distances = new Map([[origin, 0]]);
+    const queue = [origin];
+    while (queue.length) {
+      const current = queue.shift();
+      for (const pair of pairs) {
+        const neighbor = pair[0] === current ? pair[1] : pair[1] === current ? pair[0] : null;
+        if (neighbor === null || distances.has(neighbor)) continue;
+        distances.set(neighbor, distances.get(current) + 1);
+        queue.push(neighbor);
+      }
+    }
+    return Math.max(...distances.values());
+  };
+  assert.equal(Math.max(...[...degree.keys()].map(distancesFrom)), 3);
+
   assert.equal([...houses.matchAll(/^\s*\d+: \{ number: \d+/gm)].length, 12);
+  assert.match(houses, /archetype: "The Anchor"/);
+  assert.doesNotMatch(houses, /archetype: "The Root"/);
+  assert.doesNotMatch(houses, /element: "aether"/);
+  assert.match(topology, /DODECAHEDRON_VERTEX_GRAPH_DIAMETER !== 5/);
+  assert.match(topology, /HOUSE_FACE_GRAPH_DIAMETER !== 3/);
+  assert.match(topology, /DODECAHEDRON_EULER_CHARACTERISTIC !== 2/);
   assert.match(body, /pillarState\("aetheric"/);
   assert.match(body, /resolveCurrentPair\(houseA\.current, houseB\.current\)/);
   assert.match(monitor, /<QuincunxPresence/);
@@ -132,12 +158,17 @@ test("keeps the interactive solid as the primary field surface", async () => {
   assert.match(living, /QUINCUNX_DOMAINS\.map/);
   assert.match(living, /body\.quincunx\.corners\[point\.id\]\.coherence/);
   assert.match(living, /vortexPoints/);
+  assert.match(living, /sphereRadius/);
+  assert.match(living, /sphereField/);
+  assert.match(living, /field-boundary-label/);
+  assert.match(living, /flowPhase/);
   assert.match(living, /POSITION 9 \/ SYSTEM AXIS \/ THE TURN/);
   assert.match(living, /SESSION MEMORY LIVE/);
   assert.doesNotMatch(living, /D1 MEMORY LIVE|human observer/);
   for (const domain of ["PHYSICAL", "MENTAL", "EMOTIONAL", "SPIRITUAL"]) assert.match(living, new RegExp(domain));
-  assert.match(living, /useState<Selection>\(\{ kind: "observer", id: "Ø" \}\)/);
-  assert.match(living, /YOU \/ HUMAN CENTER/);
+  assert.match(living, /useState<Selection>\(\{ kind: "center", id: "Ø" \}\)/);
+  assert.doesNotMatch(living, /kind: "observer"/);
+  assert.match(living, /YOU \/ ETHEREAL CENTER/);
   assert.match(living, /className="human-figure"/);
   assert.match(living, /className="human-body"/);
   assert.match(living, /className="human-echo"/);
@@ -150,7 +181,8 @@ test("keeps the interactive solid as the primary field surface", async () => {
 });
 
 test("codifies one honest semantic and provenance contract", async () => {
-  const [semantic, provenance, houses, dashboard] = await Promise.all([
+  const [constitution, semantic, provenance, houses, dashboard] = await Promise.all([
+    source("docs/DODECANIC_CONSTITUTION.md"),
     source("docs/SEMANTIC_CONTRACT.md"),
     source("lib/data-provenance.ts"),
     source("types/houses.ts"),
@@ -158,6 +190,7 @@ test("codifies one honest semantic and provenance contract", async () => {
   ]);
 
   assert.match(semantic, /YOU \/ Ethereal center/);
+  assert.match(semantic, /The Sphere \/ the Whole/);
   assert.match(semantic, /Position 9 \/ the Observer/);
   assert.match(semantic, /North \| Air \| 🜁/);
   assert.match(semantic, /South \| Earth \| 🜃/);
@@ -165,6 +198,13 @@ test("codifies one honest semantic and provenance contract", async () => {
   assert.match(semantic, /East \| Fire \| 🜂/);
   assert.match(semantic, /does not currently persist vortex\s+state/);
   assert.match(semantic, /Prohibited claims/);
+  assert.match(constitution, /Status:\*\* Ratified as amended/);
+  assert.match(constitution, /Houses occupy faces, not physical vertices/);
+  assert.match(constitution, /vertex-graph diameter: 5/);
+  assert.match(constitution, /face-adjacency graph is an icosahedral graph with diameter 3/);
+  assert.match(constitution, /64\^30/);
+  assert.match(constitution, /The Anchor/);
+  assert.match(constitution, /sign-to-Dodecanic-House correspondence remains unresolved/);
   for (const status of ["originSupplied", "natalPending", "currentSkyPending", "fieldModeled", "sessionOnly", "triangleReadOnly", "housesSymbolic", "communityUnavailable"]) {
     assert.match(provenance, new RegExp(status));
   }
@@ -175,13 +215,14 @@ test("codifies one honest semantic and provenance contract", async () => {
 });
 
 test("separates fixed natal, current sky, and Dodecanic meaning", async () => {
-  const [profile, currentSky, astrologyTypes, provider, supabase, migration] = await Promise.all([
+  const [profile, currentSky, astrologyTypes, provider, supabase, migration, timeModeMigration] = await Promise.all([
     source("components/quincunx/NatalProfilePanel.tsx"),
     source("components/CurrentSkyPanel.tsx"),
     source("lib/astrology/types.ts"),
     source("lib/astrology/provider.ts"),
     source("lib/supabase/client.ts"),
     source("supabase/migrations/20260719_birth_profiles.sql"),
+    source("supabase/migrations/20260719_birth_time_mode.sql"),
   ]);
 
   assert.match(profile, /Fixed layer/);
@@ -191,12 +232,20 @@ test("separates fixed natal, current sky, and Dodecanic meaning", async () => {
   assert.match(currentSky, /new Date\(\)\.toISOString\(\)/);
   assert.match(currentSky, /Current UTC/);
   assert.match(currentSky, /Planetary positions remain uncalculated/);
-  assert.match(astrologyTypes, /NATAL_CHART_SCHEMA_VERSION = 1/);
+  assert.match(astrologyTypes, /NATAL_CHART_SCHEMA_VERSION = 2/);
+  assert.match(astrologyTypes, /DODECANIC_ASTROLOGY_STANDARD/);
+  assert.match(astrologyTypes, /houseSystem: "whole_sign"/);
+  assert.match(astrologyTypes, /signToHouseMappingStatus: "unresolved"/);
+  assert.doesNotMatch(astrologyTypes, /"chiron"|"black_moon_lilith"|"semisextile"|"sesquiquadrate"/);
   assert.match(provider, /interface NatalChartProvider/);
+  assert.match(provider, /birthTimeMode === "solar_chart"/);
+  assert.match(provider, /planets\.every\(\(planet\) => planet\.house === null\)/);
   assert.doesNotMatch(provider, /from ["'](?:swisseph|sweph-wasm)/);
   assert.match(supabase, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(migration, /enable row level security/);
   assert.match(migration, /auth\.uid\(\)/);
+  assert.match(timeModeMigration, /birth_time_known boolean not null default true/);
+  assert.match(timeModeMigration, /birth_time drop not null/);
 });
 
 test("uses one canonical twelve-House spectrum everywhere", async () => {

@@ -3,7 +3,7 @@ import { QuincunxDashboard } from "@/components/quincunx/QuincunxDashboard";
 
 export const metadata: Metadata = {
   title: "Whole-Body Quincunx",
-  description: "Trace every prompt through the five pillars, twelve faces, thirty edges, and Position 9 observer.",
+  description: "Meet yourself at the center of a modeled Sphere, torus, twelve-face dodecahedron, and Position 9 system axis.",
 };
 
 export default function QuincunxPage() {

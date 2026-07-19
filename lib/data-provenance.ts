@@ -29,7 +29,7 @@ export const DATA_PROVENANCE = {
   natalPending: {
     kind: "pending",
     label: "Chart pending",
-    disclosure: "Swiss Ephemeris, coordinates, and historical timezone resolution are not connected.",
+    disclosure: "Swiss Ephemeris, coordinates, historical timezone resolution, and the sign-to-House map are not connected.",
   },
   currentSkyPending: {
     kind: "pending",
@@ -39,7 +39,7 @@ export const DATA_PROVENANCE = {
   fieldModeled: {
     kind: "modeled",
     label: "Modeled",
-    disclosure: "Field values reflect authored language-pattern rules, not biometric or diagnostic measurements.",
+    disclosure: "Sphere, torus, and coherence values reflect authored interface rules, not biometric, physical, or diagnostic measurements.",
   },
   sessionOnly: {
     kind: "session",

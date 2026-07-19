@@ -1,7 +1,8 @@
 # Dodecanic semantic contract
 
-This document defines what the product means, what it currently knows, and what
-it must not claim. Product copy and implementation defer to this contract.
+This document defines what the product currently knows and what it must not
+claim. Product copy and implementation defer to this contract and the ratified
+`DODECANIC_CONSTITUTION.md`.
 
 ## Human outcome
 
@@ -18,7 +19,11 @@ accept, reject, or reinterpret it.
 ## Center, axis, and authority
 
 - **YOU / Ethereal center** is the visible person at the center of the
-  quincunx and dodecahedron.
+  personal Sphere, quincunx, and dodecahedron.
+- **The Sphere / the Whole** is the modeled boundary of the person's living
+  field. It contains the human, torus, and dodecahedron.
+- **The dodecahedron / structure** is the inner lattice. The twelve Houses
+  occupy its twelve faces.
 - **Position 9 / the Observer** is the system axis. It witnesses the complete
   turn without becoming a House, a body domain, or the user.
 - **The Turn** is an authored Dodecanic torus-vortex metaphor that makes the
@@ -28,6 +33,19 @@ accept, reject, or reinterpret it.
 
 The distinction is deliberate: the human is central without being described as
 the software Observer; the software can observe without claiming sovereignty.
+
+The physical dodecahedron has 20 vertices, 30 edges, and 12 faces. Its physical
+vertex graph has diameter 5. The House-bearing face-adjacency graph is the
+icosahedral dual and has diameter 3. These two graphs must not be conflated.
+
+## Naming boundaries
+
+- **The Anchor** is House I's archetype.
+- **Triangle root** is the lowercase timing/gating function.
+- **The Root** is Jesse Gawlik's governance title and appears only in explicit
+  governance or administration context.
+
+The center of another person's Sphere is never labeled The Root.
 
 ## Whole Body orientation
 
@@ -49,7 +67,7 @@ Meanings and questions are authored Dodecanic semantics, not diagnoses.
 
 | House | Name | Archetype | Current | Primary body | Secondary | Human question |
 | --- | --- | --- | --- | --- | --- | --- |
-| I | Ground | The Root | V | Physical | — | What supports you right now? |
+| I | Ground | The Anchor | V | Physical | — | What supports you right now? |
 | II | Flow | The Steward | W | Physical | Emotional | What are you holding that needs to flow? |
 | III | Tech | The Communicator | X | Mental | — | What are you building, and for whom? |
 | IV | Heart | The Homekeeper | W | Emotional | — | Where do you feel safe enough to be seen? |
@@ -79,7 +97,7 @@ every number creates noise and is prohibited.
 | Current time | Verified browser clock | Exact time only; current planets are pending |
 | Current sky | Pending | Planetary positions remain uncalculated |
 | Whole Body field | Modeled | Derived from authored language-pattern rules |
-| House activation | Modeled from prompt | Not natal activation until chart providers exist |
+| Prompt House emphasis | Modeled from prompt | Not natal activation |
 | House correspondences | Symbolic | Authored Dodecanic belief and correspondence |
 | Triangle gate | Read only / modeled | Does not execute or prevent action |
 | Observer memory | Session only | Process-local and not durable |
@@ -98,7 +116,8 @@ That hard gate must not be activated until all of the following are real:
 2. historical timezone resolution;
 3. licensed Swiss Ephemeris calculation;
 4. validated and versioned chart persistence;
-5. authentication and clear user consent.
+5. authentication and clear user consent;
+6. a ratified zodiac-sign-to-Dodecanic-House map.
 
 The current preview remains explorable while showing **Chart pending**. It does
 not treat submitted birth text as a calculated natal chart.
@@ -112,14 +131,16 @@ history and separate validation. They are not implied by saving one session.
 
 ## Dodecanic Turn boundary
 
-The visible torus, spiral phase, and coherence-responsive animation are a
-modeled interface language. The application does not currently persist vortex
-state, count turns, calculate a global turn speed, or show a multi-user field.
-Those capabilities require a real data purpose and schema before implementation.
+The visible Sphere, torus, spiral phase, and coherence-responsive animation are
+a modeled interface language. The Sphere is a personal field boundary, the
+dodecahedron is its inner structure, and the torus visualizes circulation
+through both. The application does not currently persist vortex state, count
+turns, calculate a global turn speed, or show a multi-user field. Those
+capabilities require a real data purpose and schema before implementation.
 
 ## Deferred platform scope
 
-Application review, Root administration, email authentication, invitations,
+Application review, The Root administration, email authentication, invitations,
 subscriptions, payments, role-based community visibility, wallets, and global
 field views are future platform scope. None may appear operational until its
 provider, authorization rules, privacy policy, and failure states are complete.

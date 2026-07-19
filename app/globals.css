@@ -829,12 +829,12 @@ a:focus-visible {
 }
 
 .living-stage::after {
-  border: 1px solid rgba(184, 255, 90, 0.08);
-  border-radius: 50%;
+  background: radial-gradient(circle at center, transparent 56%, rgba(2, 6, 5, 0.5) 100%);
   content: "";
-  inset: 16% 12%;
+  inset: 0;
   pointer-events: none;
   position: absolute;
+  z-index: 1;
 }
 
 .living-canvas {
@@ -853,6 +853,33 @@ a:focus-visible {
   outline: 1px solid rgba(184, 255, 90, 0.58);
   outline-offset: -3px;
 }
+
+.field-boundary-label {
+  align-items: end;
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  pointer-events: none;
+  position: absolute;
+  right: 14px;
+  text-align: right;
+  top: 42px;
+  z-index: 3;
+}
+
+.field-boundary-label span,
+.field-boundary-label strong,
+.field-boundary-label small {
+  background: rgba(7, 11, 10, 0.78);
+  font-family: var(--mono);
+  line-height: 1;
+  padding: 4px 6px;
+  text-transform: uppercase;
+}
+
+.field-boundary-label span { color: #d8cfff; font-size: 10px; letter-spacing: 0.09em; }
+.field-boundary-label strong { color: #ecfff2; font-size: 12px; letter-spacing: 0.06em; }
+.field-boundary-label small { color: #81968b; font-size: 10px; letter-spacing: 0.04em; }
 
 .human-anchor {
   align-items: center;
@@ -2509,6 +2536,25 @@ a:focus-visible {
 }
 .birth-form input:focus { border-color: var(--violet-bright); outline: 0; }
 .birth-form input::placeholder { color: #77747e; }
+.birth-form input:disabled { color: #77747e; cursor: not-allowed; opacity: 0.65; }
+
+.birth-time-control { display: grid; gap: 8px; }
+.birth-time-toggle {
+  background: transparent;
+  border: 1px solid #3b3943;
+  color: #aaa7b0;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  justify-self: start;
+  letter-spacing: 0.04em;
+  padding: 8px 10px;
+  text-transform: uppercase;
+}
+.birth-time-toggle:hover,
+.birth-time-toggle:focus-visible,
+.birth-time-toggle[aria-pressed="true"] { border-color: var(--violet-bright); color: #e1dcff; outline: 0; }
+.birth-time-control > small { color: #aaa7b0; font-family: var(--mono); font-size: 10px; line-height: 1.45; }
 
 .birth-form > button {
   align-items: center;

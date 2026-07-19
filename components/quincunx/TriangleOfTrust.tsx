@@ -22,7 +22,7 @@ export function TriangleOfTrust({
     `Gate ${escapement.gate}.`,
     `Master impulse ${percent(triangle.master.coherence)}.`,
     `Mirror restoring feedback ${percent(triangle.mirror.coherence)}.`,
-    `Root timing gate ${percent(triangle.root.coherence)}.`,
+    `Triangle root timing gate ${percent(triangle.root.coherence)}.`,
     `Position 9 system observer witnesses the model.`,
   ].join(" ");
   const clockStyle = {
@@ -48,7 +48,7 @@ export function TriangleOfTrust({
           <div className="escapement-pendulum" aria-hidden="true"><i /><b>Ø</b></div>
           <span className="clock-role clock-master">MASTER <b>Impulse</b></span>
           <span className="clock-role clock-mirror">MIRROR <b>Restore</b></span>
-          <span className="clock-role clock-root">ROOT <b>Gate</b></span>
+          <span className="clock-role clock-root">root <b>Gate</b></span>
           <small>POSITION 9 / SYSTEM WITNESS</small>
         </div>
 
@@ -56,7 +56,7 @@ export function TriangleOfTrust({
           <div className="escapement-roles">
             <div><span>Master · X · {triangle.master.house.current}</span><strong>{triangle.master.house.name}</strong><em>{percent(triangle.master.coherence)} · {triangle.master.valve}</em></div>
             <div><span>Mirror · IX · {triangle.mirror.house.current}</span><strong>{triangle.mirror.house.name}</strong><em>{percent(triangle.mirror.coherence)} · {triangle.mirror.valve}</em></div>
-            <div><span>Root · I · {triangle.root.house.current}</span><strong>{triangle.root.house.name}</strong><em>{percent(triangle.root.coherence)} · {triangle.root.valve}</em></div>
+            <div><span>root · I · {triangle.root.house.current}</span><strong>{triangle.root.house.name}</strong><em>{percent(triangle.root.coherence)} · {triangle.root.valve}</em></div>
           </div>
           <div className="escapement-equation">
             <span>One-tick stability model</span>
@@ -79,7 +79,7 @@ export function TriangleOfTrust({
         <p>{escapement.reason}</p>
       </div>
       <p className="trust-explanation">
-        Master sets direction. Mirror tests deviation. Root controls timing. Position 9 is the system witness; the human retains authority to accept or reject its reflection. This instrument does not authorize actions or claim physical prediction.
+        Master sets direction. Mirror tests deviation. The Triangle root controls timing. Position 9 is the system witness; the human retains authority to accept or reject its reflection. This instrument does not authorize actions or claim physical prediction.
       </p>
     </article>
   );

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
 import { HouseSpectrum } from "@/components/houses/HouseSpectrum";
-import type { BirthProfile } from "@/lib/birth-profile";
+import { formatBirthTime, hasKnownBirthTime, type BirthProfile } from "@/lib/birth-profile";
 import { DATA_PROVENANCE } from "@/lib/data-provenance";
 import { HOUSE_SPECTRUM_CONIC, HOUSE_SPECTRUM_ORDER } from "@/lib/house-spectrum";
 
@@ -18,6 +18,8 @@ export function NatalProfilePanel({
   profile: BirthProfile | null;
   onEditProfile: () => void;
 }) {
+  const knownBirthTime = profile ? hasKnownBirthTime(profile) : false;
+
   return (
     <section className="natal-profile-panel" aria-label="Your natal profile and chart">
       <header className="natal-profile-hero">
@@ -38,7 +40,7 @@ export function NatalProfilePanel({
 
       <div className="natal-birth-grid" aria-label="Birth profile">
         <div><span>Birth date</span><strong>{profile?.birthDate || "Not provided"}</strong></div>
-        <div><span>Exact time</span><strong>{profile?.birthTime || "Not provided"}</strong></div>
+        <div><span>Birth time</span><strong>{profile ? formatBirthTime(profile) : "Not provided"}</strong></div>
         <div><span>Birth place</span><strong>{profile?.birthPlace || "Not provided"}</strong></div>
         <button type="button" onClick={onEditProfile}>
           {profile ? "Edit origin" : "Add birth details"} <span aria-hidden="true">↗</span>
@@ -50,7 +52,7 @@ export function NatalProfilePanel({
         <div>
           <strong>Natal engine · not connected</strong>
           <p>
-            Swiss Ephemeris, place coordinates, and historical timezone resolution must return verified data before this surface displays placements. Nothing is guessed.
+            Swiss Ephemeris, place coordinates, historical timezone resolution, and the sign-to-House map must be verified before this surface displays Dodecanic activation. Nothing is guessed.
           </p>
         </div>
       </div>
@@ -81,13 +83,15 @@ export function NatalProfilePanel({
 
         <div className="natal-wheel-copy">
           <p className="eyebrow">Natal blueprint</p>
-          <h3>Twelve Houses around one exact origin.</h3>
+          <h3>Twelve Houses around one supplied origin.</h3>
           <p>
-            Verified planets, angles, cusps, and aspects will occupy this wheel. Live transits will then activate the same House system without overwriting your natal foundation.
+            {knownBirthTime
+              ? "Verified planets, angles, cusps, and aspects will occupy this wheel. Live transits may then activate the same House system without overwriting your natal foundation."
+              : "Solar-chart mode will calculate verified planetary signs without inventing an Ascendant, Midheaven, or cusp Houses. Dodecanic activation remains pending."}
           </p>
           <ol className="chart-data-flow">
             <li><span>01</span><strong>Resolve origin</strong><small>place · timezone · UTC</small></li>
-            <li><span>02</span><strong>Calculate natal</strong><small>planets · angles · Houses</small></li>
+            <li><span>02</span><strong>Calculate natal</strong><small>{knownBirthTime ? "planets · angles · Houses" : "solar chart · no ASC / MC"}</small></li>
             <li><span>03</span><strong>Compare now</strong><small>transits · aspects · activation</small></li>
           </ol>
         </div>
@@ -114,7 +118,7 @@ export function NatalProfilePanel({
       <HouseSpectrum variant="profile" />
 
       <p className="natal-data-boundary">
-        Birth details currently remain in this browser session. No astrological placement appears until the calculation pipeline verifies it.
+        Birth details currently remain in this browser session. No astrological placement appears until the calculation pipeline verifies it, and no Dodecanic House activates until the sign-to-House map is ratified.
       </p>
     </section>
   );

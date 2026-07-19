@@ -9,14 +9,14 @@ import {
   getAdjacentHouses,
   type Point3,
 } from "@/lib/dodecahedron/topology";
-import type { BirthProfile } from "@/lib/birth-profile";
+import { formatBirthTime, type BirthProfile } from "@/lib/birth-profile";
 import { hexToRgba, HOUSE_ROMAN, HOUSE_SPECTRUM, HOUSE_SPECTRUM_ORDER, mixHouseColors } from "@/lib/house-spectrum";
 import type { ObserverSnapshot, CommunityTelemetry } from "@/lib/observer-telemetry";
 import type { DodecahedralEdgeState, HouseFaceState } from "@/lib/quincunx/whole-body";
 import type { HouseNumber } from "@/types/houses";
 
 type Selection =
-  | { kind: "observer"; id: "Ø" }
+  | { kind: "center"; id: "Ø" }
   | { kind: "face"; id: HouseNumber }
   | { kind: "edge"; id: string };
 
@@ -126,8 +126,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   const hitMapRef = useRef<{
     faces: ProjectedFace[];
     edges: ProjectedEdge[];
-    observer: { x: number; y: number } | null;
-  }>({ faces: [], edges: [], observer: null });
+    center: { x: number; y: number } | null;
+  }>({ faces: [], edges: [], center: null });
   const rotationRef = useRef({ x: -0.24, y: 0.3 });
   const orbitRef = useRef({
     pointerInside: false,
@@ -143,7 +143,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   const [rotating, setRotating] = useState(true);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [selection, setSelection] = useState<Selection>({ kind: "observer", id: "Ø" });
+  const [selection, setSelection] = useState<Selection>({ kind: "center", id: "Ø" });
   const body = snapshot.body;
   const aethericCoherence = body.pillars.find((pillar) => pillar.id === "aetheric")?.coherence ?? body.overallCoherence;
   const collapseCoherence = body.quincunx.corners.physical.coherence;
@@ -243,15 +243,18 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const scale = Math.min(width, height) * 0.98;
+      const fieldSize = Math.min(width, height);
+      const latticeScale = fieldSize * 0.84;
+      const sphereBreath = reduceMotion ? 0 : Math.sin(time * 0.0008) * (0.002 + body.overallCoherence * 0.0025);
+      const sphereRadius = fieldSize * (0.445 + sphereBreath);
       const angleX = rotationRef.current.x;
       const angleY = rotationRef.current.y;
       const projectedVertices = DODECAHEDRON_VERTICES.map((coordinates): ProjectedPoint => {
         const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
         return {
-          x: centerX + x * scale * perspective,
-          y: centerY + y * scale * perspective,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
           z,
         };
       });
@@ -260,8 +263,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         const perspective = 1 / (4.8 - z);
         return {
           ...direction,
-          x: centerX + x * scale * perspective,
-          y: centerY + y * scale * perspective,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
           z,
         };
       });
@@ -271,15 +274,18 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       ] as Point3[]).map((coordinates) => {
         const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
-        return { x: centerX + x * scale * perspective, y: centerY + y * scale * perspective, z };
+        return { x: centerX + x * latticeScale * perspective, y: centerY + y * latticeScale * perspective, z };
       });
-      const vortexPhase = reduceMotion ? 0 : -time * (0.00018 + body.overallCoherence * 0.00024);
+      const vortexClock = !reduceMotion && body.overallCoherence < 0.5
+        ? Math.floor(time / (95 - body.overallCoherence * 100)) * (95 - body.overallCoherence * 100)
+        : time;
+      const vortexPhase = reduceMotion ? 0 : -vortexClock * (0.00018 + body.overallCoherence * 0.00024);
       const vortexSteps = 108;
       const vortexPoints = Array.from({ length: vortexSteps + 1 }, (_, index) => {
         const u = (index / vortexSteps) * Math.PI * 2 + vortexPhase;
         const v = u * 3 + vortexPhase * 0.7;
-        const majorRadius = 0.69;
-        const minorRadius = 0.19;
+        const majorRadius = 1.3;
+        const minorRadius = 0.4;
         const coordinates: Point3 = [
           (majorRadius + minorRadius * Math.cos(v)) * Math.cos(u),
           minorRadius * Math.sin(v),
@@ -287,7 +293,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         ];
         const [x, y, z] = rotatePoint(coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
-        return { x: centerX + x * scale * perspective, y: centerY + y * scale * perspective, z };
+        return { x: centerX + x * latticeScale * perspective, y: centerY + y * latticeScale * perspective, z };
       });
       const projectedFaces = DODECAHEDRON_FACES.map(({ house, vertexIndices }): ProjectedFace => {
         const points = vertexIndices.map((index) => projectedVertices[index]);
@@ -305,7 +311,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         const to = projectedVertices[topology.vertexIndices[1]];
         return { id: edge.id, from, to, z: (from.z + to.z) / 2 };
       });
-      hitMapRef.current = { faces: projectedFaces, edges, observer: { x: centerX, y: centerY } };
+      hitMapRef.current = { faces: projectedFaces, edges, center: { x: centerX, y: centerY } };
 
       const radial = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.min(width, height) * 0.48);
       radial.addColorStop(0, "rgba(184, 255, 90, 0.09)");
@@ -313,6 +319,57 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       radial.addColorStop(1, "rgba(3, 8, 8, 0)");
       context.fillStyle = radial;
       context.fillRect(0, 0, width, height);
+
+      const sphereField = context.createRadialGradient(
+        centerX - sphereRadius * 0.22,
+        centerY - sphereRadius * 0.28,
+        sphereRadius * 0.04,
+        centerX,
+        centerY,
+        sphereRadius,
+      );
+      sphereField.addColorStop(0, `rgba(210, 255, 225, ${0.025 + body.overallCoherence * 0.025})`);
+      sphereField.addColorStop(0.58, `rgba(111, 160, 144, ${0.012 + body.overallCoherence * 0.02})`);
+      sphereField.addColorStop(0.9, `rgba(143, 91, 255, ${0.025 + body.overallCoherence * 0.035})`);
+      sphereField.addColorStop(1, "rgba(5, 10, 8, 0)");
+      context.beginPath();
+      context.arc(centerX, centerY, sphereRadius, 0, Math.PI * 2);
+      context.fillStyle = sphereField;
+      context.fill();
+
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(angleY * 0.35);
+      context.strokeStyle = `rgba(205, 239, 220, ${0.07 + body.overallCoherence * 0.12})`;
+      context.lineWidth = 0.8;
+      context.setLineDash([2, 7]);
+      context.beginPath();
+      context.ellipse(0, 0, sphereRadius, sphereRadius * 0.28, 0, 0, Math.PI * 2);
+      context.stroke();
+      context.beginPath();
+      context.ellipse(0, 0, sphereRadius * 0.3, sphereRadius, angleX * 0.45, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+      context.setLineDash([]);
+
+      const sphereBoundary = context.createLinearGradient(
+        centerX - sphereRadius,
+        centerY - sphereRadius,
+        centerX + sphereRadius,
+        centerY + sphereRadius,
+      );
+      sphereBoundary.addColorStop(0, "rgba(142, 181, 160, 0.18)");
+      sphereBoundary.addColorStop(0.34, `rgba(227, 255, 237, ${0.32 + body.overallCoherence * 0.35})`);
+      sphereBoundary.addColorStop(0.7, `rgba(167, 132, 255, ${0.22 + body.overallCoherence * 0.26})`);
+      sphereBoundary.addColorStop(1, "rgba(114, 145, 130, 0.14)");
+      context.beginPath();
+      context.arc(centerX, centerY, sphereRadius, 0, Math.PI * 2);
+      context.strokeStyle = sphereBoundary;
+      context.shadowColor = body.overallCoherence > 0.6 ? "rgba(184, 255, 90, 0.28)" : "rgba(255, 209, 102, 0.16)";
+      context.shadowBlur = 10 + body.overallCoherence * 15;
+      context.lineWidth = 1.2 + body.overallCoherence * 0.8;
+      context.stroke();
+      context.shadowBlur = 0;
 
       compassPoints.forEach((point) => {
         context.beginPath();
@@ -339,6 +396,23 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       context.strokeStyle = axisGradient;
       context.lineWidth = 1.25;
       context.stroke();
+
+      [0, 0.5].forEach((offset, index) => {
+        const axisPhase = reduceMotion
+          ? 0.5
+          : (time * (0.0001 + body.overallCoherence * 0.00016) + offset) % 1;
+        const from = index === 0 ? axisPoints[0] : axisPoints[1];
+        const to = index === 0 ? axisPoints[1] : axisPoints[0];
+        const pulseX = from.x + (to.x - from.x) * axisPhase;
+        const pulseY = from.y + (to.y - from.y) * axisPhase;
+        context.beginPath();
+        context.arc(pulseX, pulseY, 2.2 + body.overallCoherence, 0, Math.PI * 2);
+        context.fillStyle = index === 0 ? "rgba(231, 255, 218, 0.9)" : "rgba(189, 167, 255, 0.88)";
+        context.shadowColor = index === 0 ? "rgba(184, 255, 90, 0.8)" : "rgba(143, 91, 255, 0.86)";
+        context.shadowBlur = 10;
+        context.fill();
+        context.shadowBlur = 0;
+      });
 
       vortexPoints.slice(1).forEach((point, index) => {
         const previous = vortexPoints[index];
@@ -394,8 +468,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
         return {
           ...point,
           coherence: body.quincunx.corners[point.id].coherence,
-          x: centerX + x * scale * perspective,
-          y: centerY + y * scale * perspective,
+          x: centerX + x * latticeScale * perspective,
+          y: centerY + y * latticeScale * perspective,
           z,
         };
       });
@@ -475,7 +549,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       context.lineJoin = "round";
       [...body.edges]
         .sort((edgeA, edgeB) => projectedEdgeMap.get(edgeA.id)!.z - projectedEdgeMap.get(edgeB.id)!.z)
-        .forEach((edge) => {
+        .forEach((edge, edgeIndex) => {
           const line = projectedEdgeMap.get(edge.id)!;
           const selected = selection.kind === "edge" && selection.id === edge.id;
           const frontEdge = line.z > -0.05;
@@ -498,6 +572,22 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           context.setLineDash(edge.valve === "IDLE" ? [3, 7] : []);
           context.stroke();
           context.shadowBlur = 0;
+
+          if (frontEdge && edge.flow > 0.08 && edge.valve !== "CLOSE") {
+            const flowPhase = reduceMotion
+              ? 0.5
+              : (time * (0.00008 + body.overallCoherence * 0.00018) + edgeIndex * 0.137) % 1;
+            const pulseX = line.from.x + (line.to.x - line.from.x) * flowPhase;
+            const pulseY = line.from.y + (line.to.y - line.from.y) * flowPhase;
+            context.beginPath();
+            context.arc(pulseX, pulseY, 1.3 + edge.flow * 1.4, 0, Math.PI * 2);
+            context.fillStyle = spectrumColor;
+            context.shadowColor = spectrumColor;
+            context.shadowBlur = 7 + edge.flow * 6;
+            context.globalAlpha = 0.48 + edge.flow * 0.5;
+            context.fill();
+            context.shadowBlur = 0;
+          }
         });
       context.setLineDash([]);
       context.globalAlpha = 1;
@@ -617,9 +707,9 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    const observer = hitMapRef.current.observer;
-    if (observer && Math.hypot(x - observer.x, y - observer.y) <= 34) {
-      setSelection({ kind: "observer", id: "Ø" });
+    const center = hitMapRef.current.center;
+    if (center && Math.hypot(x - center.x, y - center.y) <= 34) {
+      setSelection({ kind: "center", id: "Ø" });
       return;
     }
     const edge = [...hitMapRef.current.edges]
@@ -637,13 +727,13 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
   }
 
   return (
-    <section className="living-model" aria-label="Living dodecahedron observer">
+    <section className="living-model" aria-label="Dodecanic living field">
       <div className="living-stage">
         <canvas
           ref={canvasRef}
           className={`living-canvas${spaceHeld ? " is-orbit-ready" : ""}${dragging ? " is-orbiting" : ""}`}
           role="img"
-          aria-label="Solid rotating dodecahedron with the human at the Ethereal center, a five-point Whole Body quincunx, a Position 9 system vortex axis, twelve selectable pentagonal faces, and thirty selectable physical edges"
+          aria-label="Modeled living field with a luminous outer Sphere, a torus circulating through the whole, an inner rotating dodecahedron, the human at the Ethereal center, a five-point Whole Body quincunx, a Position 9 system axis, twelve selectable pentagonal faces, and thirty selectable physical edges"
           tabIndex={0}
           onPointerEnter={() => { orbitRef.current.pointerInside = true; }}
           onPointerLeave={() => { orbitRef.current.pointerInside = false; }}
@@ -659,13 +749,18 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
             inspectAt(event.clientX, event.clientY);
           }}
         />
+        <div className="field-boundary-label" aria-hidden="true">
+          <span>∞ / Sphere</span>
+          <strong>The Whole</strong>
+          <small>Modeled field boundary</small>
+        </div>
         <div
-          className={`human-anchor${selection.kind === "observer" ? " is-selected" : ""}`}
+          className={`human-anchor${selection.kind === "center" ? " is-selected" : ""}`}
           data-profile={profile ? "placed" : "pending"}
           aria-hidden="true"
         >
           <span className="vortex-axis-label">POSITION 9 / SYSTEM AXIS / THE TURN</span>
-          <span className="human-anchor-label">YOU / HUMAN CENTER</span>
+          <span className="human-anchor-label">YOU / ETHEREAL CENTER</span>
           <div className="human-orbit">
             <svg className="human-figure" viewBox="0 0 120 150" aria-hidden="true">
               <g className="human-echo">
@@ -683,8 +778,8 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
               </g>
             </svg>
           </div>
-          <strong>{selection.kind === "observer" ? "Ø SELECTED" : "Ø CENTER"}</strong>
-          <small>{profile ? `${profile.birthDate} · ${profile.birthTime}` : "ORIGIN AWAITS"}</small>
+          <strong>{selection.kind === "center" ? "Ø SELECTED" : "Ø CENTER"}</strong>
+          <small>{profile ? `${profile.birthDate} · ${formatBirthTime(profile)}` : "ORIGIN AWAITS"}</small>
         </div>
         <div className="living-overlay living-overlay-top">
           <span className={`connection-light is-${connection}`} />
@@ -711,7 +806,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
       <ObserverInspector
         selectedFace={selectedFace}
         selectedEdge={selectedEdge}
-        selectedObserver={selection.kind === "observer"}
+        selectedCenter={selection.kind === "center"}
         community={community}
         profile={profile}
         onSelectFace={(id) => setSelection({ kind: "face", id })}
@@ -723,32 +818,32 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
 function ObserverInspector({
   selectedFace,
   selectedEdge,
-  selectedObserver,
+  selectedCenter,
   community,
   profile,
   onSelectFace,
 }: {
   selectedFace: HouseFaceState | null;
   selectedEdge: DodecahedralEdgeState | null;
-  selectedObserver: boolean;
+  selectedCenter: boolean;
   community: CommunityTelemetry;
   profile: BirthProfile | null;
   onSelectFace: (house: HouseNumber) => void;
 }) {
-  if (selectedObserver) {
+  if (selectedCenter) {
     return (
       <aside className="observer-inspector" aria-live="polite">
         <p className="eyebrow">YOU / Ø / Ethereal center</p>
         <h3>{profile ? "You in the Field" : "Your Place Awaits"} <span>Ø</span></h3>
         <div className="inspector-reading" data-valve={profile ? "OPEN" : "MONITOR"}>
           <strong>{profile ? "PLACED" : "PENDING"}</strong>
-          <span>DODECAHEDRAL CENTER</span>
+          <span>LIVING FIELD CENTER</span>
         </div>
         <dl>
           {profile ? (
             <>
               <div><dt>Birth date</dt><dd>{profile.birthDate}</dd></div>
-              <div><dt>Birth time</dt><dd>{profile.birthTime}</dd></div>
+              <div><dt>Birth time</dt><dd>{formatBirthTime(profile)}</dd></div>
               <div><dt>Birth place</dt><dd>{profile.birthPlace}</dd></div>
             </>
           ) : (
@@ -759,12 +854,15 @@ function ObserverInspector({
             </>
           )}
           <div><dt>Body link</dt><dd>Ethereal / quincunx center</dd></div>
+          <div><dt>Whole</dt><dd>Sphere / personal field</dd></div>
+          <div><dt>Structure</dt><dd>Dodecahedron / 12 Houses</dd></div>
+          <div><dt>Flow</dt><dd>Torus / modeled circulation</dd></div>
           <div><dt>System</dt><dd>Position 9 / vortex axis</dd></div>
         </dl>
         <p className="observer-reason">
           {profile
-            ? "Your submitted origin anchors you at the Ethereal center. Position 9 is the system axis that witnesses the turn without becoming a House or replacing your authority."
-            : "Ø reserves the human center for you. Position 9 is the system axis. Add birth coordinates in the You shelf; verified chart placement remains pending."}
+            ? "Your submitted origin anchors you at the Ethereal center of your Sphere. The dodecahedron structures twelve Houses inside it; the torus models circulation through the whole. Position 9 witnesses the turn without becoming you or replacing your authority."
+            : "Ø reserves the center of the Sphere for you. Position 9 is the system axis. Add birth coordinates in the You shelf; verified chart placement remains pending."}
         </p>
         <div className="community-reading">
           <span>Session memory</span>

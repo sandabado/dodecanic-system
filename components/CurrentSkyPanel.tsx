@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DataProvenanceBadge } from "@/components/DataProvenanceBadge";
-import type { BirthProfile } from "@/lib/birth-profile";
+import { formatBirthTime, type BirthProfile } from "@/lib/birth-profile";
 import { DATA_PROVENANCE } from "@/lib/data-provenance";
 
 function formatUtc(iso: string): string {
@@ -63,8 +63,8 @@ export function CurrentSkyPanel({ profile }: { profile: BirthProfile | null }) {
           <span>01 / Fixed</span>
           <h3>Natal blueprint</h3>
           <p>{profile
-            ? `${profile.birthDate} · ${profile.birthTime} · ${profile.birthPlace}`
-            : "Birth date, exact time, and place are required."}</p>
+            ? `${profile.birthDate} · ${formatBirthTime(profile)} · ${profile.birthPlace}`
+            : "Birth date and place are required; birth time may be marked unknown."}</p>
         </article>
         <i aria-hidden="true">×</i>
         <article data-ready={Boolean(nowIso)}>
@@ -76,12 +76,12 @@ export function CurrentSkyPanel({ profile }: { profile: BirthProfile | null }) {
         <article>
           <span>03 / Reading</span>
           <h3>Dodecanic activation</h3>
-          <p>Transit-to-natal aspects will activate Houses, colors, currents, and interpretation.</p>
+          <p>Transit-to-natal aspects can activate Houses only after the philosophical sign-to-House map is ratified.</p>
         </article>
       </div>
 
       <p className="model-boundary">
-        The clock is live. Planetary positions remain uncalculated until the licensed Swiss Ephemeris adapter and place/time resolver are connected.
+        The clock is live. Planetary positions remain uncalculated until the licensed Swiss Ephemeris adapter and place/time resolver are connected. No Dodecanic House activation occurs until the sign-to-House map is ratified.
       </p>
     </section>
   );

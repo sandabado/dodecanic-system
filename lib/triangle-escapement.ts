@@ -56,10 +56,10 @@ export function modelTriangleEscapement(
   const gate: EscapementGate = triangleLocked ? "LOCK" : triangleHolding ? "HOLD" : "OPEN";
 
   const reason = gate === "LOCK"
-    ? "Root locks the gate because a close signal or critical coherence is present. Human review is required."
+    ? "The Triangle root locks the gate because a close signal or critical coherence is present. Human review is required."
     : gate === "HOLD"
       ? "Mirror holds the impulse while coherence or role alignment remains below the release threshold."
-      : "Master impulse, Mirror alignment, and Root timing satisfy this modeled release threshold.";
+      : "Master impulse, Mirror alignment, and Triangle root timing satisfy this modeled release threshold.";
 
   return {
     coherence: triangle.coherence,

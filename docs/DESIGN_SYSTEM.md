@@ -3,15 +3,17 @@
 ## Principles
 
 1. **The field is primary.** Chrome and supporting panels recede behind the
-   dodecahedron.
+   containing Sphere, circulating torus, and inner dodecahedron.
 2. **One accent has one meaning.** Green is live/open, amber is pending/watch,
    and coral is stop/close. Supplied, modeled, symbolic, and session-only layers
    use their provenance colors. House colors identify Houses; they do not
    replace system status.
 3. **Typography carries hierarchy.** Serif type names concepts, mono type shows
    coordinates and telemetry, and sans-serif type explains.
-4. **No ornamental component without information.** Motion expresses state or
-   orientation and respects reduced-motion preferences.
+4. **No ornamental component without information.** Sphere glow expresses
+   modeled whole-field coherence, torus motion expresses modeled circulation,
+   and edge particles express modeled flow. Motion respects reduced-motion
+   preferences.
 5. **Pending is visible.** Unconnected data is labeled, not simulated.
 
 ## Tokens
@@ -44,7 +46,7 @@ cymatic marks are authored correspondences, not literal sound-to-light science.
 - `Brand` — one identity lockup used by every route
 - `BirthPortal` — origin input only
 - `BirthLoading` — short transition, never a fake calculation
-- `LivingDodecahedron` — primary interactive field
+- `LivingDodecahedron` — nested Sphere / torus / dodecahedron / human field
 - `NatalProfilePanel` — fixed user layer
 - `CurrentSkyPanel` — exact moving-time layer
 - `WholeBodyMonitor` — Quincunx presence without duplicate face/edge tables

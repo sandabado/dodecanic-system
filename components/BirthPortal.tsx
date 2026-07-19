@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Brand } from "@/components/Brand";
 import { BIRTH_PROFILE_STORAGE_KEY, type BirthProfile } from "@/lib/birth-profile";
 
+type BirthTextField = "birthDate" | "birthTime" | "birthPlace";
+
 type ValidationError = {
-  field: keyof BirthProfile;
+  field: BirthTextField;
   message: string;
 };
 
@@ -20,16 +22,17 @@ export function BirthPortal() {
   const [profile, setProfile] = useState<BirthProfile>({
     birthDate: "",
     birthTime: "",
+    birthTimeKnown: true,
     birthPlace: "",
   });
   const [validationError, setValidationError] = useState<ValidationError | null>(null);
 
-  function updateProfile(field: keyof BirthProfile, value: string) {
+  function updateProfile(field: BirthTextField, value: string) {
     setProfile((current) => ({ ...current, [field]: value }));
     setValidationError((current) => current?.field === field ? null : current);
   }
 
-  function focusField(form: HTMLFormElement, field: keyof BirthProfile) {
+  function focusField(form: HTMLFormElement, field: BirthTextField) {
     const input = form.elements.namedItem(field);
     if (input instanceof HTMLInputElement) input.focus();
   }
@@ -86,7 +89,7 @@ export function BirthPortal() {
         >
           <div className="birth-form-heading">
             <span>01 / Origin profile</span>
-            <em>Fields required to save</em>
+            <em>Date + place required</em>
           </div>
 
           <label htmlFor="birth-date">
@@ -103,17 +106,38 @@ export function BirthPortal() {
             />
           </label>
 
-          <label htmlFor="birth-time">
-            <span>Exact birth time</span>
-            <input
-              id="birth-time"
-              name="birthTime"
-              type="time"
-              value={profile.birthTime}
-              onChange={(event) => updateProfile("birthTime", event.target.value)}
-              required
-            />
-          </label>
+          <div className="birth-time-control">
+            <label htmlFor="birth-time">
+              <span>{profile.birthTimeKnown === false ? "Birth time" : "Exact birth time"}</span>
+              <input
+                id="birth-time"
+                name="birthTime"
+                type="time"
+                value={profile.birthTime}
+                onChange={(event) => updateProfile("birthTime", event.target.value)}
+                disabled={profile.birthTimeKnown === false}
+                required={profile.birthTimeKnown !== false}
+              />
+            </label>
+            <button
+              className="birth-time-toggle"
+              type="button"
+              aria-pressed={profile.birthTimeKnown === false}
+              onClick={() => {
+                setProfile((current) => ({
+                  ...current,
+                  birthTime: current.birthTimeKnown === false ? current.birthTime : "",
+                  birthTimeKnown: current.birthTimeKnown === false,
+                }));
+                setValidationError(null);
+              }}
+            >
+              {profile.birthTimeKnown === false ? "Use an exact time" : "I don’t know my birth time"}
+            </button>
+            {profile.birthTimeKnown === false && (
+              <small>Future chart calculation will use transparent solar-chart mode without ASC or MC.</small>
+            )}
+          </div>
 
           <label htmlFor="birth-place">
             <span>Birthplace</span>
