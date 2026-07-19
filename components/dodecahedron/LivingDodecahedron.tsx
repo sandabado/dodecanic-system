@@ -61,6 +61,13 @@ const COMPASS_DIRECTIONS = [
   { label: "W", coordinates: [-1.92, 0, 0] as Point3 },
 ] as const;
 
+const QUINCUNX_DOMAINS = [
+  { id: "physical", label: "PHYSICAL", element: "EARTH", symbol: "V", color: "#84a66e", coordinates: [-0.98, -0.76, 0] as Point3 },
+  { id: "mental", label: "MENTAL", element: "AIR", symbol: "∧", color: "#d4af37", coordinates: [0.98, -0.76, 0] as Point3 },
+  { id: "emotional", label: "EMOTIONAL", element: "WATER", symbol: "W", color: "#2ba8a0", coordinates: [-0.98, 0.76, 0] as Point3 },
+  { id: "spiritual", label: "SPIRITUAL", element: "FIRE", symbol: "∞", color: "#d16b45", coordinates: [0.98, 0.76, 0] as Point3 },
+] as const;
+
 function rotatePoint([x, y, z]: Point3, angleY: number, angleX: number): Point3 {
   const cosY = Math.cos(angleY);
   const sinY = Math.sin(angleY);
@@ -323,62 +330,87 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           }
         });
 
-      const rotorPoints = [
-        { symbol: "V", role: "COLLAPSE", coherence: collapseCoherence, coordinates: [-1.18, 0, 0] as Point3 },
-        { symbol: "∞", role: "SPIRIT", coherence: body.quincunx.corners.spiritual.coherence, coordinates: [0, -0.62, 0] as Point3 },
-        { symbol: "∧", role: "EXPANSE", coherence: expanseCoherence, coordinates: [1.18, 0, 0] as Point3 },
-        { symbol: "W", role: "WAVE", coherence: body.quincunx.corners.emotional.coherence, coordinates: [0, 0.62, 0] as Point3 },
-      ].map((point) => {
+      const quincunxPoints = QUINCUNX_DOMAINS.map((point) => {
         const [x, y, z] = rotatePoint(point.coordinates, angleY, angleX);
         const perspective = 1 / (4.8 - z);
         return {
           ...point,
+          coherence: body.quincunx.corners[point.id].coherence,
           x: centerX + x * scale * perspective,
           y: centerY + y * scale * perspective,
           z,
         };
       });
-      const collapse = rotorPoints[0];
-      const expanse = rotorPoints[2];
+      const physicalPoint = quincunxPoints[0];
+      const mentalPoint = quincunxPoints[1];
+      const quincunxOutline = [
+        quincunxPoints[0],
+        quincunxPoints[1],
+        quincunxPoints[3],
+        quincunxPoints[2],
+      ];
 
       context.beginPath();
-      rotorPoints.forEach((point, index) => {
+      quincunxOutline.forEach((point, index) => {
         if (index === 0) context.moveTo(point.x, point.y);
         else context.lineTo(point.x, point.y);
       });
       context.closePath();
-      context.fillStyle = "rgba(184, 255, 90, 0.035)";
+      context.fillStyle = "rgba(143, 91, 255, 0.055)";
       context.fill();
-      context.strokeStyle = "rgba(184, 255, 90, 0.32)";
-      context.lineWidth = 0.8;
+      context.strokeStyle = "rgba(222, 214, 246, 0.48)";
+      context.lineWidth = 1.15;
       context.stroke();
+
+      quincunxPoints.forEach((point) => {
+        const connection = context.createLinearGradient(centerX, centerY, point.x, point.y);
+        connection.addColorStop(0, "rgba(143, 91, 255, 0.72)");
+        connection.addColorStop(1, hexToRgba(point.color, 0.72));
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = connection;
+        context.globalAlpha = 0.42 + point.coherence * 0.48;
+        context.lineWidth = 1.15 + point.coherence * 0.65;
+        context.stroke();
+      });
+      context.globalAlpha = 1;
 
       context.beginPath();
-      context.moveTo(collapse.x, collapse.y);
-      context.lineTo(expanse.x, expanse.y);
-      context.strokeStyle = Math.abs(balanceDelta) < 0.05 ? "#b8ff5a" : "#ffd166";
-      context.lineWidth = 2;
+      context.moveTo(physicalPoint.x, physicalPoint.y);
+      context.lineTo(mentalPoint.x, mentalPoint.y);
+      context.strokeStyle = Math.abs(balanceDelta) < 0.05 ? "rgba(184, 255, 90, 0.86)" : "rgba(255, 209, 102, 0.86)";
+      context.lineWidth = 2.2;
       context.stroke();
 
-      rotorPoints.forEach((point) => {
+      quincunxPoints.forEach((point) => {
+        const nodeRadius = 9 + point.coherence * 4;
         context.beginPath();
-        context.arc(point.x, point.y, 3.5 + point.coherence * 2.5, 0, Math.PI * 2);
-        context.fillStyle = point.symbol === "V" || point.symbol === "∧" ? "#ecffdb" : "#7cae98";
-        context.globalAlpha = 0.58 + point.coherence * 0.42;
+        context.arc(point.x, point.y, nodeRadius + 5, 0, Math.PI * 2);
+        context.fillStyle = hexToRgba(point.color, 0.12 + point.coherence * 0.08);
         context.fill();
-        context.globalAlpha = 1;
-        context.fillStyle = "#cbd8d0";
-        context.font = "700 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.beginPath();
+        context.arc(point.x, point.y, nodeRadius, 0, Math.PI * 2);
+        context.fillStyle = "rgba(6, 10, 8, 0.94)";
+        context.fill();
+        context.strokeStyle = point.color;
+        context.lineWidth = 1.5;
+        context.stroke();
+        context.fillStyle = point.color;
+        context.font = "800 12px ui-monospace, SFMono-Regular, Menlo, monospace";
         context.textAlign = "center";
-        context.fillText(point.symbol, point.x, point.y - 10);
-      });
+        context.textBaseline = "middle";
+        context.fillText(point.symbol, point.x, point.y + 0.5);
 
-      context.fillStyle = "#73827a";
-      context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
-      context.textAlign = "right";
-      context.fillText(collapse.role, collapse.x - 9, collapse.y + 3);
-      context.textAlign = "left";
-      context.fillText(expanse.role, expanse.x + 9, expanse.y + 3);
+        const labelOnLeft = point.coordinates[0] < 0;
+        context.textAlign = labelOnLeft ? "right" : "left";
+        context.fillStyle = "#f1f5f2";
+        context.font = "800 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.fillText(point.label, point.x + (labelOnLeft ? -nodeRadius - 7 : nodeRadius + 7), point.y - 4);
+        context.fillStyle = hexToRgba(point.color, 0.92);
+        context.font = "650 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+        context.fillText(`${point.element} · ${formatPercent(point.coherence)}`, point.x + (labelOnLeft ? -nodeRadius - 7 : nodeRadius + 7), point.y + 8);
+      });
 
       const projectedEdgeMap = new Map(edges.map((edge) => [edge.id, edge]));
       context.lineCap = "round";
@@ -553,7 +585,7 @@ export function LivingDodecahedron({ snapshot, community, connection, profile }:
           ref={canvasRef}
           className={`living-canvas${spaceHeld ? " is-orbit-ready" : ""}${dragging ? " is-orbiting" : ""}`}
           role="img"
-          aria-label="Solid rotating dodecahedron with Void Observer Ø, twelve selectable pentagonal faces, and thirty selectable physical edges"
+          aria-label="Solid rotating dodecahedron with a five-point Whole Body quincunx centered on the human observer Ø, twelve selectable pentagonal faces, and thirty selectable physical edges"
           tabIndex={0}
           onPointerEnter={() => { orbitRef.current.pointerInside = true; }}
           onPointerLeave={() => { orbitRef.current.pointerInside = false; }}

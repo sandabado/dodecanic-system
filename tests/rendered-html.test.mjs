@@ -128,6 +128,9 @@ test("keeps the interactive solid as the primary field surface", async () => {
   assert.match(living, /mixHouseColors/);
   assert.match(living, /COMPASS_DIRECTIONS\.map/);
   assert.match(living, /rotatePoint\(direction\.coordinates, angleY, angleX\)/);
+  assert.match(living, /QUINCUNX_DOMAINS\.map/);
+  assert.match(living, /body\.quincunx\.corners\[point\.id\]\.coherence/);
+  for (const domain of ["PHYSICAL", "MENTAL", "EMOTIONAL", "SPIRITUAL"]) assert.match(living, new RegExp(domain));
   assert.match(living, /useState<Selection>\(\{ kind: "observer", id: "Ø" \}\)/);
   assert.match(living, /YOU \/ HUMAN CENTER/);
   assert.match(living, /className="human-figure"/);
